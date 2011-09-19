@@ -1,0 +1,147 @@
+Notes from meeting with Stu:
+      -zookeeper node used to store shard state, copied by clients at start. zk server must keep track of live nodes (~100), notify api servers (~25) upon changes.
+
+key -> v_s mapping using some form of hashing.
+
+Notes from meeting with Alex/RvP
+      -follow dist. (ie graph dist), query type dist (req implied), data skew dist influence on design (ask?)
+      -sharding: often is   key -> v_s -> p_n.
+      		 -replication and online load balancing happens in v_s -> p_n part
+		 -key used influences efficiency of certain queries (as well as key -> v_s part)
+		 -the map key -> v_s can be a multimap, which affects the load balancing properties of the v_s -> p_n part.
+
+some constraints:
+     -want A,B queries 450 k/s
+     -want A,* queries 120 k/s
+     -want (A,*) intersection (B,*) 10k/s, and 3-way intersection (5k/s)
+   
+some other facts
+     -Redis storage overhead (x3) being benchmarked
+     -Data model: indexing for diff queries. eg. 
+
+some other reqs:
+     -satisfy requirements while minimizing machine numbers.
+
+question:
+	-if you have these requirements, how do they relate to actual empirical api usage data.
+	-size of shard if gaga is in a single shard.
+	-cost of query if all nodes query.
+
+Proposal text:
+
+-sampling and testing (eg how RvP is doing it)
+
+
+project:
+
+-project: adapt the sharding system from the paper to use infrasctructure from here, impelement
+
+
+-'try different sharding schemes'. then need to know on top of what platform to implement.
+      -state stored in zookeeper (1MB per node akin to tablet controller in pnuts, with clients being the routers themselves), delivered to clients who each hold the sharding library.
+-'try the shard_unit -> node part of (key -> shard_unit -> node). influences load balancing. may want to move.
+this mapping's size if ad hoc mappings are allowed is proportional to the number of sharding units. (x rep factor, which is small) 
+what is a good size of sharding unit? (pnuts is about 
+
+-design:
+different sharding strategies. Right now the team is likely to pick hash by left endpoint. (ie all edges (A,*) map to same shard)
+Different schemes were evaluated, some that tried taking consistent hashing on the left endpoint as a startpoint and tried to spread, while keeping
+a bound on number of shards required to answer a single query.
+-deliverable: implementations of serveral sharding policies.
+-measurements: compare any designs xin terms of min number of machines (or, alternatively, fix number of machines and try to find max  required to support the (wiki) specified query throughput/latency. 
+eg. 450 k edge queries/s 120 k vertex (all edges (A,*)) per second. with benchamrks generated using real usage data (real graph properties (degree distribution etc), real api patterns (% edge queries vs % followers /follows queries,etc)
+-latency and throughput at different loads, with skew (eg peanuts does something of this sort)
+-load balancing also needs to be benchmarked if it is in place => how does it affect maximum load
+
+graph size estimated at 300 M users * 40 forward edges/user * 100 B/edge = 12 * 10^(2 + 6 + 1 + 2) = 1.5*(10^12)  = 1.2 TB.
+upper graph limit of 500 M users * " * " 100 B/edge = 2.0 TB. 
+3-way replicated -> 3.6 - 5 TB. (not taking into account compression OR other overhead)
+Served from RAM: 50 GB per machine => 60 - 100 machines. (needs to scale to 100 machines talking) => a broadcast query cost is latency max(Xi to 100), 100X bandwidth.
+
+-microbenchmark vs. benchmark?
+try implementing a couple of things on top of Stu's library, benchmark it.
+(not sure at this point of what limitations this library would impose over anything implemented on top of it.).
+
+How big to make a shard unit? if  > 300 MB, 500 MB?. Time to send over net is 500 MB * 10 ms /MB = 
+
+
+sharding also depends on data model:
+	 -if model is (A,B,type_of_edge) (eg (A,B,"blocks") then could shard by type of edge first, then actual endpoint ids.
+
+max, expected, min
+max 10 M follows * 100 B/follow = 10^(1 + 6 + 2) B = 1GB :( 
+(note size eg. PNUTS 500 MB per tablet).
+
+percentile threshold value  count
+0.5000000000	     174152736	1	208017502
+0.7500000000	     261229104	5	59113608
+0.9000000000	     313474924	26	46776921
+0.9900000000	     344822417	405	30915589
+0.9990000000	     347957166	2987	3133638
+0.9999000000	     348270641	23228	313386
+0.9999900000	     348301988	175038	31345
+0.9999990000	     348305123	1281352	3135
+0.9999999000	     348305437	4088585	314
+0.9999999900	     348305468	9367076	31
+1.0000000000	     348305472	12923201	3
+
+0.99 is 405 followers by
+
+percentile	     threshold	value		count
+0.5000000000	     174152736	2		183895733
+0.9900000000	     344822417	539		31334744
+0.9999000000	     348270641	10332		312573
+0.9999999900	     348305468	566839		31
+1.0000000000	     348305472	690905		3
+
+0.99 is 539 following
+
+consequences for load balancing:
+	     -
+consequences for read latency:
+	     -from Memory (sequentially 1 process) 1GB => 250MS
+	     -8 processes > 25 MS
+
+expected  50 follows * 100 B/follow = 4kB
+min 0. np. ~30 users with more than 4 Million.
+
+reasonable size? 500 MB / 100 B / 3 (overhead)  = 5 * 10^8 / 10^2 = 1.6 Million. currently only ~300 left endpoints above this.
+99.99 req: 23k => 20 e 3 * 1 e 2  = 2 e 6. 2 MB. 0.5 musec seq. from memory.
+
+scale to 500 million nodes with 100 avg follows.
+
+Project:
+	-is a different sharding method worth it? eg. that 0.001 percentile is potentially fairly influential, may want to optimize for them more then the 99.99 
+guarantee stricly requires. 
+
+But besides, even from the stricly 99.99 of all requests served with 10ms  (read) and 50 ms write, there are important potential factors.
+	
+-dependence between graph degree distribution and query data skew distribution.
+	    .eg. Lady gaga has more followers, so besides the fact that every tweet from here invovles a longer 'read followed', it may also be more active. (this affects 99.99 of all requests consideration)
+	    .(this should be checked empirically).
+	    .OR. the more people you follow the more you check twitter.  if the people with 0 followers are very inactive, the performance of  'get everyone X follow' depends on the graph distribution for active users.
+
+-dependence between graph degree distribution and type of query.  
+-dependence between type of query and data skew (ie more unitons or interesections as a total fracton depending on)
+-three way dependencies (overkill, but still in the spirit of a complete exploration of the space)
+
+--these kinds of considerations may encourage exploring more careful sharding, either online or static.
+
+-- there is also an assumption (as far as I understand it)
+
+-- there is a requirement for 
+
+also right now we are assuming a sharding of the type. key -> unit -> machine. Where the unit size is strongly influenced by our choice of looking at the left node.
+What about key -> node mappings (eg. consistent hashing, unless we specify ad hoc unit -> machine maps. we really only need key and live machines, and units are not really materialized in any way.
+still, need a concise way of mapping key -> machine, units are useful for this. But as long as it fits in zK and can be kept up to date efficiently, its not a problem.
+-------------------------------------------------------------------------------
+
+-write stuff and send for review
+-read reviews from Stu esp.
+-can have time in meetings to describe what I am doing, and get questions.
+-will get time in cluster to try out method with a portion of graph/ config + lib + time to move things
+-if implementation turns out to be an issue?
+-if implementation turns out to be a non-issue: can implement a benchmark framework in addition to the actual sharding
+-while these thigns are done offline, implementing a method to find good partitioning itself may be challening depending on the idea behind it.
+
+
