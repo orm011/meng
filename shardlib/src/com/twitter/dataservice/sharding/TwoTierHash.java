@@ -46,13 +46,13 @@ public class TwoTierHash implements ISharding
        }
    }
    
-   public TwoTierHash(IImprovedShardPrimitives state){
-       for (){
-           
-       }
-       
-   }
-                   
+//   public TwoTierHash(IImprovedShardPrimitives state){
+//       for (){
+//           
+//       }
+//       
+//   }
+//                   
     public Set<INode> getReplicaSetForEdgeQuery(Edge edge)
     {
         //the default is to hash an edge by left vertex (so all edges for that vertex will be in same shard)
@@ -75,7 +75,7 @@ public class TwoTierHash implements ISharding
         IToken hashval = defaultTierHash.apply(new Edge(vertex, null));
         List<Set<INode>> answer = new ArrayList<Set<INode>>();
         if (exceptions.contains(hashval)){
-            Pair<IToken> realHashRange = exceptionTierHash.apply(vertex);
+            Pair<IToken, IToken> realHashRange = exceptionTierHash.apply(vertex);
             Set<IShard> allRelevantShards = findAllShards(exceptionRing, realHashRange);
             for (IShard sh: allRelevantShards){
                 answer.add(state.getReplicaSet(sh));
@@ -92,16 +92,16 @@ public class TwoTierHash implements ISharding
         return null;
     }
  
-    private Set<IShard> findAllShards(Set<IShard> shards, Pair<IToken> endToken){
+    private Set<IShard> findAllShards(Set<IShard> shards, Pair<IToken, IToken> endToken){
         return null;
     }
         
-    public promoteToException(Vertex v)
+    public void promoteToException(Vertex v)
     {
         //must do the work of updating shard list, replica map.
     }
     
-    public demoteToDefault(Vertex v)
+    public void demoteToDefault(Vertex v)
     {
         //must first bring shards for the same vertex together to the same node (by changing replica map)
         //then must change shardlist to remove unnecessary replicas (from exception list as well as the other list)

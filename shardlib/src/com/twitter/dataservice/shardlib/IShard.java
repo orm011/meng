@@ -1,5 +1,7 @@
 package com.twitter.dataservice.shardlib;
 
+import java.util.List;
+
 public interface IShard
 {
     //returns the size in tokens 
