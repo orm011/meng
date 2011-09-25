@@ -7,4 +7,7 @@ public class SystemParameters
     
     //cost of reading an edge in nanos
     public static double edgecost = 250000*edgeMetadataSize/(10^6);
+    
+    public static final int workersPerNode = 6;
+    
 }

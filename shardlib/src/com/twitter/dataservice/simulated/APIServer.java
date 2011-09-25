@@ -1,11 +1,12 @@
 package com.twitter.dataservice.simulated;
 
-import java.net.Inet4Address;
 import java.net.MalformedURLException;
-import java.net.UnknownHostException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 
 import com.twitter.dataservice.remotes.RemoteDataNode;
 import com.twitter.dataservice.sharding.ISharding;
@@ -14,11 +15,15 @@ public class APIServer
 {
     private ISharding shardinglib = null;
     
-    RemoteDataNode rn;
+    List<RemoteDataNode> datanodes = new LinkedList<RemoteDataNode>();
     
-    public APIServer() {
+    public APIServer(String[] dataNodeNames) {
+        
         try {
-            rn = (RemoteDataNode) Naming.lookup("/DataNodeServer");
+            for (String name: dataNodeNames){
+                System.out.printf("looking up node %s\n", name);
+                datanodes.add((RemoteDataNode) Naming.lookup(name));
+            }
         } catch (RemoteException e) {
             System.out.println("failed to find remote object: " + e.getMessage());
         } catch (NotBoundException e) {
@@ -28,21 +33,29 @@ public class APIServer
         }
     }
     
-    public byte[] getEdge(){
-        try
-        {
-            return rn.getEdge();
-        } catch (RemoteException e)
-        {
-            e.printStackTrace();
-            return new byte[]{(byte) 0xff};
+    public List<String> getEdge(){
+        List<byte[]> results = new ArrayList<byte[]>(5);
+        List<String> successes = new ArrayList<String>(5);
+        for (RemoteDataNode node: datanodes){
+                try
+                {
+                    results.add(node.getEdge());
+                    successes.add(node.toString());
+                } catch (RemoteException e)
+                {
+                    e.printStackTrace();
+                }
         }
+        
+        return successes;
     }
     
-    public static void main(String args[]){
-        APIServer api = new APIServer();
-        byte[] a = api.getEdge();
-        System.out.println(String.format("Size: %d Elt: %s", a.length, a[0]));
+    public static void main(String[] args){
+        APIServer api = new APIServer(args);
+        List<String> successes = api.getEdge();
+        
+        for (String name : successes)
+            System.out.println(name);
     }
 
 }

@@ -13,11 +13,12 @@ import com.twitter.dataservice.remotes.RemoteDataNode;
 
 public class DataNode extends UnicastRemoteObject implements RemoteDataNode 
 {
-    
+    String name;
     //has a: executor for incoming workTasks
     ExecutorService workExecutor;
     
-    public DataNode(int numWorkers) throws RemoteException {
+    public DataNode(int numWorkers, String name) throws RemoteException {
+        this.name = name;
         workExecutor = Executors.newFixedThreadPool(numWorkers);
     }
 
@@ -27,7 +28,7 @@ public class DataNode extends UnicastRemoteObject implements RemoteDataNode
         workExecutor.execute(new WorkTask(1));
         return new byte[]{0};
     }
-
+    
     @Override
     public byte[] getIntersection(Integer workFactorLeft, Integer workFactorRight, float intersectionFactor)
             throws RemoteException
@@ -45,18 +46,20 @@ public class DataNode extends UnicastRemoteObject implements RemoteDataNode
     }
     
     public static void main(String[] argv){
+
+        String name  = argv[0];
         if (System.getSecurityManager() == null)
             System.setSecurityManager(new RMISecurityManager());
         
         //figure out if the host name in use makes sense
         
         try{
-            DataNode dn = new DataNode(6);
-            Naming.rebind("/DataNodeServer", dn);
+            System.out.printf("registering work node as: %s\n", name);
+            DataNode dn = new DataNode(SystemParameters.workersPerNode, name);
+            Naming.rebind(dn.name, dn);
             System.out.println("successfully bound");
         } catch (Exception e){
             e.printStackTrace();
-            System.out.println(e.getMessage());
             System.exit(1);
         }
     }
