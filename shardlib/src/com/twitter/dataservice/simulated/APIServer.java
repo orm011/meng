@@ -1,5 +1,8 @@
 package com.twitter.dataservice.simulated;
 
+import com.twitter.dataservice.remotes.RemoteDataNode;
+import com.twitter.dataservice.sharding.ISharding;
+
 import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
@@ -7,9 +10,6 @@ import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-
-import com.twitter.dataservice.remotes.RemoteDataNode;
-import com.twitter.dataservice.sharding.ISharding;
 
 public class APIServer
 {
@@ -32,6 +32,11 @@ public class APIServer
             e.printStackTrace();
         }
     }
+    
+//
+//    public List<String> getAllEdges(int workFactor){
+//
+//    }
     
     public List<String> getEdge(){
         List<byte[]> results = new ArrayList<byte[]>(5);

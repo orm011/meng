@@ -10,7 +10,7 @@ public interface IShardPrimitives
     
     public void setShardList(List<IShard> shards);
     
-    public Set<INode> getReplicaSet(IShard shard);
+    public Set<Node> getReplicaSet(IShard shard);
     
-    public void setReplicaSet(IShard s, Set<INode> replica);
+    public void setReplicaSet(IShard s, Set<Node> replica);
 }

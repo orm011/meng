@@ -9,5 +9,6 @@ public class SystemParameters
     public static double edgecost = 250000*edgeMetadataSize/(10^6);
     
     public static final int workersPerNode = 6;
-    
+
+    public static final int numberOfWorkNodes = 4;
 }

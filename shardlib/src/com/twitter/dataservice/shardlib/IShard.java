@@ -8,11 +8,11 @@ public interface IShard
     public int getSize();
  
     //lower end in token space
-    public IToken getLowerEnd();
+    public Token getLowerEnd();
     
     //upper end in token space
-    public IToken getUpperEnd();
+    public Token getUpperEnd();
 
     //list of replicas that hold shard
-    public List<INode> getReplicas();
+    public List<Node> getReplicas();
 }

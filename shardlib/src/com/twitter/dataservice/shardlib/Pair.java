@@ -1,7 +1,19 @@
 package com.twitter.dataservice.shardlib;
 
-public abstract class Pair<L,R>
+public class Pair<L,R>
 {
-    public abstract L getLeft();
-    public abstract R getRight();
+    private L left;
+    private R right;
+    
+    public Pair(L leftmem, R rightmem){
+        this.left = leftmem;
+        this.right = rightmem;
+    }
+    
+    public L getLeft(){
+        return left;
+    }
+    public R getRight(){
+        return right;
+    }
 }

@@ -5,28 +5,20 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.twitter.dataservice.shardlib.Edge;
-import com.twitter.dataservice.shardlib.IClusteredHashFunction;
-import com.twitter.dataservice.shardlib.IHashFunction;
-import com.twitter.dataservice.shardlib.IKey;
-import com.twitter.dataservice.shardlib.INode;
-import com.twitter.dataservice.shardlib.IShard;
-import com.twitter.dataservice.shardlib.IShardPrimitives;
-import com.twitter.dataservice.shardlib.IToken;
-import com.twitter.dataservice.shardlib.Pair;
-import com.twitter.dataservice.shardlib.Vertex;
+import com.twitter.dataservice.shardlib.*;
+import com.twitter.dataservice.shardlib.Node;
 
 public class TwoTierHash implements ISharding
 {
    private IShardPrimitives state;
  
-   private Set<IToken> exceptions; //individual tokens that need 
+   private Set<Token> exceptions; //individual tokens that need 
    private Set<IShard> defaultRing;  //hash ring where we deal with usual case
    private Set<IShard> exceptionRing; //a hash ring where we deal with exceptions
    
    private IClusteredHashFunction exceptionTierHash; //the hash function for exceptions 
    private IHashFunction defaultTierHash; //the hash function for default cases
-   private INode SPECIAL_INODE;
+   private Node SPECIAL_INODE;
    
    
    //we use the state (stored in zookeeper) to encode both the exception
@@ -53,15 +45,15 @@ public class TwoTierHash implements ISharding
 //       
 //   }
 //                   
-    public Set<INode> getReplicaSetForEdgeQuery(Edge edge)
+    public Set<Node> getReplicaSetForEdgeQuery(Edge edge)
     {
         //the default is to hash an edge by left vertex (so all edges for that vertex will be in same shard)
-        IToken hashval = defaultTierHash.apply(edge);
-        IToken realhash;
+        Token hashval = defaultTierHash.hash(edge);
+        Token realhash;
         IShard shard;
         //for exceptions, we hash differently, so that edges for that vertex are spread
         if (exceptions.contains(hashval)) {
-            realhash = exceptionTierHash.apply(edge); 
+            realhash = exceptionTierHash.hash(edge); 
             shard = findShard(exceptionRing, realhash);
         } else {
             shard = findShard(defaultRing, hashval);
@@ -70,12 +62,12 @@ public class TwoTierHash implements ISharding
         return state.getReplicaSet(shard);
     }
     
-    public List<Set<INode>> getReplicaSetForVertexQuery(Vertex vertex)
+    public List<Set<Node>> getReplicaSetForVertexQuery(Vertex vertex)
     {
-        IToken hashval = defaultTierHash.apply(new Edge(vertex, null));
-        List<Set<INode>> answer = new ArrayList<Set<INode>>();
+        Token hashval = defaultTierHash.hash(new Edge(vertex, null));
+        List<Set<Node>> answer = new ArrayList<Set<Node>>();
         if (exceptions.contains(hashval)){
-            Pair<IToken, IToken> realHashRange = exceptionTierHash.apply(vertex);
+            Pair<Token, Token> realHashRange = exceptionTierHash.apply(vertex);
             Set<IShard> allRelevantShards = findAllShards(exceptionRing, realHashRange);
             for (IShard sh: allRelevantShards){
                 answer.add(state.getReplicaSet(sh));
@@ -88,11 +80,11 @@ public class TwoTierHash implements ISharding
     }
         
     //find appropriate shard given the shards and a token
-    private IShard findShard(Set<IShard> shards, IToken hashval){
+    private IShard findShard(Set<IShard> shards, Token hashval){
         return null;
     }
  
-    private Set<IShard> findAllShards(Set<IShard> shards, Pair<IToken, IToken> endToken){
+    private Set<IShard> findAllShards(Set<IShard> shards, Pair<Token, Token> endToken){
         return null;
     }
         

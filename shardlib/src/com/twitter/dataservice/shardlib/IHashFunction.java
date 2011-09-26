@@ -2,5 +2,9 @@ package com.twitter.dataservice.shardlib;
 
 public interface IHashFunction
 {
-    public IToken apply(Edge e);
+    //gives you a single token
+    public Token hash(Edge e);
+    
+    //a vertex gives you two endpoints of a token range
+    public Pair<Token, Token> hash(Vertex v);
 }
