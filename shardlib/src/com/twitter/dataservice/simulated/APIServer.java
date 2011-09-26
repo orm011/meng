@@ -2,6 +2,10 @@ package com.twitter.dataservice.simulated;
 
 import com.twitter.dataservice.remotes.RemoteDataNode;
 import com.twitter.dataservice.sharding.ISharding;
+import com.twitter.dataservice.shardlib.DirectHash;
+import com.twitter.dataservice.shardlib.Edge;
+import com.twitter.dataservice.shardlib.Node;
+import com.twitter.dataservice.shardlib.Vertex;
 
 import java.net.MalformedURLException;
 import java.rmi.Naming;
@@ -10,6 +14,7 @@ import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 public class APIServer
 {
@@ -32,12 +37,7 @@ public class APIServer
             e.printStackTrace();
         }
     }
-    
-//
-//    public List<String> getAllEdges(int workFactor){
-//
-//    }
-    
+
     public List<String> getEdge(){
         List<byte[]> results = new ArrayList<byte[]>(5);
         List<String> successes = new ArrayList<String>(5);
@@ -61,7 +61,23 @@ public class APIServer
         
         for (String name : successes)
             System.out.println(name);
-    }
 
+      DirectHash dh = new DirectHash(successes.size());
+      Set<Node> nodes = dh.getReplicaSetForEdgeQuery(new Edge(new Vertex(0), new Vertex(0)));
+      List<Set<Node>> othernodes = dh.getReplicaSetForVertexQuery(new Vertex(0));
+      for (Node n: nodes){
+        System.out.println(n.toString());
+      }
+
+      System.out.println("done with edge query");
+
+      for (Set<Node> set: othernodes){
+        for (Node n: set){
+          System.out.println(n.toString());
+        }
+        System.out.println("done with set");
+      }
+      System.out.println("done with list of sets (vertex query)");
+    }
 }
     
