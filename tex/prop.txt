@@ -1,8 +1,3 @@
-Notes from meeting with Stu:
-      -zookeeper node used to store shard state, copied by clients at start. zk server must keep track of live nodes (~100), notify api servers (~25) upon changes.
-
-key -> v_s mapping using some form of hashing.
-
 Notes from meeting with Alex/RvP
       -follow dist. (ie graph dist), query type dist (req implied), data skew dist influence on design (ask?)
       -sharding: often is   key -> v_s -> p_n.
@@ -145,3 +140,44 @@ still, need a concise way of mapping key -> machine, units are useful for this. 
 -while these thigns are done offline, implementing a method to find good partitioning itself may be challening depending on the idea behind it.
 
 
+-----------------------------------------------
+Meeting with Prof. Madden and Carlo (Mon Sep 26)
+
+Conlusions/agreements
+-Agreed to send document with some technical proposal on Friday
+-Prof Madden agreed trying a few approaches even if they don't work well 
+Some ideas:
+-focus on knowing things about the graph that allow you to optimize for it.
+       -eg. get information about state of graph today. 
+       -workload info, query frequency to different parts of graph.
+       -what fraction of workloads violate SLA today, how many of those do because of large sets.
+       -change information. how does the graph change. how do accesses to it. -> how much will a scheme need to be updated
+
+-define goals:
+	-show a partitioning scheme performs 
+	-show it can meet same goals with less hardware
+	-can simulate rest of system to avoid cross team surgery, and test on simulation for some things.
+	--(my own) how about minimizing inconsistencies by colocating.
+
+
+-Partitioning:
+	-METIS algorithm
+	-schism code is open
+	-Carlo's 2 pass solution (can ask)
+	-replicating whales everywhere.
+
+-other ideas:
+       -simulating tweet store enable parallel work on on large followings (not jsut parallel reads) 
+       -avoid certain kinds of materialization (every tweet materialized many times?, store destination nodes separately from 
+
+-papers:
+	-fine grained partitioning used graph to try to approximate workload, but directly using workload is better.
+------------------------------------------------
+RvP mentioned:
+    -look into app graph, look into popularity policy (push vs pull), and 
+    -actual capacity of each node
+Stu:
+	-look into actual cost of  rpcs (is it a big deal to do them)?, look into active inactive
+	-working on snapshot lib
+John:
+	-property nodes (replicating in edges vs replicating only in one node, write path latency target read path latency target)

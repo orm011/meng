@@ -1,15 +1,13 @@
 package com.twitter.dataservice.simulated;
 
-import java.net.Inet4Address;
+import com.twitter.dataservice.remotes.RemoteDataNode;
+
 import java.rmi.Naming;
 import java.rmi.RMISecurityManager;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
-
-import com.twitter.dataservice.remotes.RemoteDataNode;
 
 public class DataNode extends UnicastRemoteObject implements RemoteDataNode 
 {
@@ -22,14 +20,12 @@ public class DataNode extends UnicastRemoteObject implements RemoteDataNode
         workExecutor = Executors.newFixedThreadPool(numWorkers);
     }
 
-    @Override
     public byte[] getEdge() throws RemoteException
     {
         workExecutor.execute(new WorkTask(1));
         return new byte[]{0};
     }
-    
-    @Override
+
     public byte[] getIntersection(Integer workFactorLeft, Integer workFactorRight, float intersectionFactor)
             throws RemoteException
     {
@@ -38,11 +34,11 @@ public class DataNode extends UnicastRemoteObject implements RemoteDataNode
         return new byte[]{0};
     }
 
-    @Override
     public byte[] getNeighbors(Integer workFactor) throws RemoteException
     {
-        workExecutor.execute(new WorkTask(workFactor));
-        return new byte[]{0};
+      workExecutor.execute(new WorkTask(workFactor));
+      System.out.println("executing order...");
+      return new byte[]{0};
     }
     
     public static void main(String[] argv){
@@ -54,14 +50,17 @@ public class DataNode extends UnicastRemoteObject implements RemoteDataNode
         //figure out if the host name in use makes sense
         
         try{
-            System.out.printf("registering work node as: %s\n", name);
+            System.out.printf("Registering work node %s...\n", name);
             DataNode dn = new DataNode(SystemParameters.workersPerNode, name);
             Naming.rebind(dn.name, dn);
-            System.out.println("successfully bound");
+
+            //this message is looked for by a test script, don't change.
+            System.out.println("success");
         } catch (Exception e){
             e.printStackTrace();
             System.exit(1);
         }
+
     }
     
 }

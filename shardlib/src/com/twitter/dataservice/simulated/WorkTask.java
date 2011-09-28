@@ -9,6 +9,7 @@ public class WorkTask implements Runnable
     public WorkTask(int workAmount){
         this.workAmount = workAmount;
     }
+  
     @Override
     public void run()
     {
@@ -29,7 +30,7 @@ public class WorkTask implements Runnable
         try
         {
             Thread.sleep(100);
-            System.out.println("work done!");
+            System.out.println("work done: " + this.workAmount);
         } catch (InterruptedException e)
         {
             // TODO log these things

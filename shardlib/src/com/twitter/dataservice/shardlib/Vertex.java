@@ -4,11 +4,19 @@ import java.io.ByteArrayOutputStream;
 
 public class Vertex
 {
-    int id;
+    final int id;
+
+  public int getWorkFactor() {
+    return workFactor;
+  }
+
+  final int workFactor;
     
-    public Vertex(int id){
-        this.id = id;   
+    public Vertex(int id, int workFactor){
+        this.id = id;
+        this.workFactor = workFactor;
     }
+
     
     public byte[] toByteArray(){
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
