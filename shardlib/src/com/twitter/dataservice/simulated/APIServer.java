@@ -1,7 +1,7 @@
 package com.twitter.dataservice.simulated;
 
 import com.twitter.dataservice.remotes.RemoteDataNode;
-import com.twitter.dataservice.sharding.ISharding;
+import com.twitter.dataservice.sharding.IKeyToNode;
 import com.twitter.dataservice.shardlib.DirectHash;
 import com.twitter.dataservice.shardlib.Edge;
 import com.twitter.dataservice.shardlib.Node;
@@ -19,7 +19,7 @@ public class APIServer
 {
 
     Map<Node, RemoteDataNode> nodes = new HashMap<Node, RemoteDataNode>();
-    private ISharding shardinglib = null; // see constructor
+    private IKeyToNode shardinglib = null; // see constructor
     private ExecutorService internalExecutor = Executors.newCachedThreadPool();
 
     
@@ -104,7 +104,6 @@ public class APIServer
     
     public static void main(String[] args){
         APIServer api = new APIServer(args);
-        byte[] res = api.getEdge(new Edge(new Vertex(1,10), new Vertex(2,10)));
-        List<byte[]> resgroup = api.getAllEdges(new Vertex(1,30));
+        new Benchmark(api).run();
     }
 }

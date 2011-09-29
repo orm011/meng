@@ -24,6 +24,10 @@ public class Vertex
         return baos.toByteArray();
     }
 
+  @Override public String toString() {
+    return String.format("Vertex: id: %d, workFactor: %d", id, getWorkFactor());
+  }
+
   @Override public boolean equals(Object o) {
     return (o instanceof Vertex) && (((Vertex)o).id == id);
   }

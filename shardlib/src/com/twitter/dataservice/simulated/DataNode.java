@@ -47,8 +47,6 @@ public class DataNode extends UnicastRemoteObject implements RemoteDataNode
         if (System.getSecurityManager() == null)
             System.setSecurityManager(new RMISecurityManager());
         
-        //figure out if the host name in use makes sense
-        
         try{
             System.out.printf("Registering work node %s...\n", name);
             DataNode dn = new DataNode(SystemParameters.workersPerNode, name);

@@ -6,11 +6,11 @@ import java.util.Set;
 //primitives as understood from Stu's description
 public interface IShardPrimitives
 {
-    public List<IShard> getShardList();
+    public List<Shard> getShardList();
     
-    public void setShardList(List<IShard> shards);
+    public void setShardList(List<Shard> shards);
     
-    public Set<Node> getReplicaSet(IShard shard);
+    public Set<Node> getReplicaSet(Shard shard);
     
-    public void setReplicaSet(IShard s, Set<Node> replica);
+    public void setReplicaSet(Shard s, Set<Node> replica);
 }

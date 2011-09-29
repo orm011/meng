@@ -1,6 +1,6 @@
 package com.twitter.dataservice.shardlib;
 
-import com.twitter.dataservice.sharding.ISharding;
+import com.twitter.dataservice.sharding.IKeyToNode;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -11,7 +11,7 @@ import java.util.TreeSet;
 
 //one of the most basic types of hashing
 //hash by left vertex
-public class DirectHash implements ISharding
+public class DirectHash implements IKeyToNode
 {
 
     private int numNodes;
