@@ -1,11 +1,14 @@
 package com.twitter.dataservice.sharding;
 
-import com.twitter.dataservice.shardlib.Edge;
-import com.twitter.dataservice.shardlib.Shard;
-import com.twitter.dataservice.shardlib.Vertex;
+import com.twitter.dataservice.shardutils.Edge;
+import com.twitter.dataservice.shardutils.Shard;
+import com.twitter.dataservice.shardutils.Vertex;
 
 import java.util.Collection;
 
+
+//this is for the virtual shard part. See IKeyToNode for the full path between
+//having a vertex/edge and getting the right nodes to query
 public interface ISharding {
 
   public Collection<Shard> getShardForVertexQuery(Vertex v);

@@ -1,11 +1,11 @@
 package com.twitter.dataservice.simulated;
 
 import com.twitter.dataservice.remotes.RemoteDataNode;
-import com.twitter.dataservice.sharding.IKeyToNode;
-import com.twitter.dataservice.shardlib.DirectHash;
-import com.twitter.dataservice.shardlib.Edge;
-import com.twitter.dataservice.shardlib.Node;
-import com.twitter.dataservice.shardlib.Vertex;
+import com.twitter.dataservice.sharding.IShardLib;
+import com.twitter.dataservice.sharding.RoundRobinShardLib;
+import com.twitter.dataservice.shardutils.Edge;
+import com.twitter.dataservice.shardutils.Node;
+import com.twitter.dataservice.shardutils.Vertex;
 
 import java.net.MalformedURLException;
 import java.rmi.Naming;
@@ -19,7 +19,7 @@ public class APIServer
 {
 
     Map<Node, RemoteDataNode> nodes = new HashMap<Node, RemoteDataNode>();
-    private IKeyToNode shardinglib = null; // see constructor
+    private IShardLib shardinglib = null; // see constructor
     private ExecutorService internalExecutor = Executors.newCachedThreadPool();
 
     
@@ -35,7 +35,7 @@ public class APIServer
                 nodes.put(local, remote);
             }
 
-            shardinglib  = new DirectHash(nodes.size());
+            shardinglib  = new RoundRobinShardLib(nodes.size());
         } catch (RemoteException e) {
             System.out.println("failed to find remote node: " + e.getMessage());
         } catch (NotBoundException e) {
@@ -45,34 +45,10 @@ public class APIServer
         }
     }
 
-  //this is where you look into state or something
-  //like mastership and live nodes
-  // to decide which nodes to query from all
-  // the options.
-  //right now I am picking a single elt of each set. arbitrarily.
-    private List<Node> getNodesForQuery(List<Set<Node>> options){
-        Iterator<Set<Node>> it = options.iterator();
-        List<Node> answer = new LinkedList<Node>();
-
-        assert it.hasNext();//non-empty
-        while (it.hasNext()){
-          answer.add(getNodeForQuery(it.next()));
-        }
-
-        return answer;
-    }
-
-    private Node getNodeForQuery(Set<Node> options){
-        Iterator<Node> nodeit = options.iterator();
-        assert nodeit.hasNext();
-        Node answer = nodeit.next();
-        return answer;
-    }
 
     public byte[] getEdge(Edge e){
         System.out.println("hello");
-        Set<Node> reps = shardinglib.getReplicaSetForEdgeQuery(e);
-        Node destination = getNodeForQuery(reps);
+        Node destination = shardinglib.getNode(e);
         byte[] result = null;
 
         try {
@@ -85,8 +61,7 @@ public class APIServer
     }
 
     public List<byte[]> getAllEdges(Vertex v) {
-      List<Set<Node>> reps = shardinglib.getReplicaSetForVertexQuery(v);
-      List<Node> destinations = getNodesForQuery(reps);
+      Collection<Node> destinations = shardinglib.getNodes(v);
       List<byte[]> ans = new LinkedList<byte[]>();
 
       try{

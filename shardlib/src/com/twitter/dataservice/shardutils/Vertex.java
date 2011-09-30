@@ -1,4 +1,4 @@
-package com.twitter.dataservice.shardlib;
+package com.twitter.dataservice.shardutils;
 
 import java.io.ByteArrayOutputStream;
 
@@ -22,6 +22,10 @@ public class Vertex
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
       baos.write(id);
         return baos.toByteArray();
+    }
+
+    public int getId(){
+      return id;
     }
 
   @Override public String toString() {

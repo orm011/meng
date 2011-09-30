@@ -1,6 +1,5 @@
-package com.twitter.dataservice.shardlib;
+package com.twitter.dataservice.shardutils;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
 public class Edge

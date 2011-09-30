@@ -1,12 +1,14 @@
-package com.twitter.dataservice.sharding;
+package com.twitter.dataservice.old;
 
-import com.twitter.dataservice.shardlib.*;
+import com.twitter.dataservice.sharding.IKeyToNode;
+import com.twitter.dataservice.sharding.IShardPrimitives;
+import com.twitter.dataservice.shardutils.*;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-public class TwoTierHash implements IKeyToNode
+public class OldTwoTierHash implements IKeyToNode
 {
    private IShardPrimitives state;
  
@@ -14,17 +16,17 @@ public class TwoTierHash implements IKeyToNode
    private Set<Shard> defaultRing;  //hash ring where we deal with usual case
    private Set<Shard> exceptionRing; //a hash ring where we deal with exceptions
    
-   private IClusteredHashFunction exceptionTierHash; //the hash function for exceptions 
+   private IHashFunction exceptionTierHash; //the hash function for exceptions
    private IHashFunction defaultTierHash; //the hash function for default cases
    private Node SPECIAL_INODE;
    
    
    //we use the state (stored in zookeeper) to encode both the exception
    //set, and the two different rings
-   public TwoTierHash(IShardPrimitives state){
+   public OldTwoTierHash(IShardPrimitives state){
        for (Shard sh : state.getShardList()){
            //exceptions are encoded in the state as single token shards
-           if (sh.getSize() == 1)
+              //check if it is in exceptions list (somehow, from the state)
                exceptions.add(sh.getLowerEnd());
            
            //the two rings are encoded by using in the shard set and replica set map
@@ -58,7 +60,7 @@ public class TwoTierHash implements IKeyToNode
         Token hashval = defaultTierHash.hash(new Edge(vertex, null));
         List<Set<Node>> answer = new ArrayList<Set<Node>>();
         if (exceptions.contains(hashval)){
-            Pair<Token, Token> realHashRange = exceptionTierHash.apply(vertex);
+            Pair<Token, Token> realHashRange = exceptionTierHash.hash(vertex);
             Set<Shard> allRelevantShards = findAllShards(exceptionRing, realHashRange);
             for (Shard sh: allRelevantShards){
                 answer.add(state.getReplicaSet(sh));

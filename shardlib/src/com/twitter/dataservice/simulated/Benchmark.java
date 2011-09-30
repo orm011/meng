@@ -1,6 +1,6 @@
 package com.twitter.dataservice.simulated;
 
-import com.twitter.dataservice.shardlib.Vertex;
+import com.twitter.dataservice.shardutils.Vertex;
 
 public class Benchmark {
 

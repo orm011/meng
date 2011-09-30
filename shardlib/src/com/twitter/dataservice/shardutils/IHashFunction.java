@@ -1,4 +1,4 @@
-package com.twitter.dataservice.shardlib;
+package com.twitter.dataservice.shardutils;
 
 public interface IHashFunction
 {
