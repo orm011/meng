@@ -1,0 +1,85 @@
+This will continue improving  as I learn more.
+
+Overview
+This is what I envision to be the structure of my MEng project/thesis:
+1. design: I've fleshed out one alternative sharding function, will want at least 1 more. Hopefully 2 more. (More on that below)
+
+2. implementation: on top of the graph service architecture (which is itself not implemented yet)
+
+3. results: I expect have a set of results be simulation based (eg simulated graph, simulated overall system),  and one set based on actual graph data + actual overall system .
+
+These are the challenges and goals:
+On the design side, a lot of the thinking done may not result in a significantly better scheme, and just provide significantly more complicated one with modest or no performance gains. On the implementation side, the Data Services team is currently building this infrastructure so I also am working on a moving target, and it makes it more challenging for me to anchor implementation designs.
+
+For an MIT MEng thesis it is probably enough to present a well informed and technically challenging exploration involving design, implementation and measurements. For Twitter I'd like to contribute something that at least informs your design, but at best provides a viable sharding mechanism specialized enough for the twitter graph  that it performs better than general methods and can be used in production.
+
+My relation to the rest of the team:
+I am currently doing an MIT VI-A MEng internship, which means I am no longer int the same internship program as before.   I get paid a student stipend from MIT from September to January, and need to work on a project that is of interest to Twitter and also that constitutes a thesis.
+
+My expectations, which I have discussed with Abhi, are that an effort will be made to provide  cluster time so that I can test these on the actual graph (or whatever the team has available to test their own system), and code reviews. I will have the chance to explain my progress or problems in team meetings and will get questions and suggestions in that time. I realize now I need to ask about expectations of the team from me, given my unusual role. Will follow up on this with Abhi.
+
+Design
+Background:
+Note: some of the numbers (eg on cost of reading all followers, correlation between frequency of fanouts and edge set size for a node) will need updating as I learn them.
+
+Sharding in the graph data store is proposed to be hashing by left endpoint.  ie a mapping like (A,B) -> A -> shard_id. This way of sharding guarantees edge localy because all edges with the same left vertex shard to the same sharding unit.  There is another design proposal that is also hashing based, but it brings bits from both h(A) and h(B) together to make the mapping less random than a hash by full (A,B). The effect of this scheme is to limit the number of shards all edges of the form (A,*) map to.
+
+In any case, there are two immediate and competing interests. One is minimizing load imbalance, the other minimizing the costs of distribution. (ie one-shard is one extreme, all-shards queries are another one). The 'optimal' scheme from this load point of view depends on actual skews of both the actual degree distribution for the graph as well as the skew in queries to particular pieces of data, and also the relative frequencies of single edge queries (does A follow B) vs multiple edge queries (who follows A).  For example, if single edge queries get(A,B) are overwhelmingly more common than get(A,*) then locality is not as important, and higher numbers of messages across multiple nodes could be tolerated.  As another example, if a lot of individual single edge queries go to edges from the same left vertex A, then spreading them out across shards is best.  Similarly, if nodes have many many followers, then serving everything from a single shard may hinder parallelism. All of these questions depend on the empirical structure of the graph and queries.
+
+The proposed sharding by left node is a simple, clean option. There are throughput targets for different operations, as well as target latencies that need to face these uneven distributions. So a good question is whether sharding by left vertex is good enough. At the 99.99 percentile, the number of followers is ~25000, which means that if a single shard is to hold all of them then a query of the form 'get all followers for A'  requires (2.5 e 4 edges) * (1 e 2 Bytes/edge) = 2.5 e 6 B = 2.5 MB   (x2 to allowing for some memory overhead, besides replication).   Reading this sequentially from Memory takes ~ 250 usec/MB * 5 MB ~ 1 ms. Which is well within the 10 ms bounds.  On the other hand there are nodes in the distribution tail that right now have 10M edges. The same read delay calculation becomes 1 e 7 edges * 1 e 2 bytes/edge = 1 e 9 B = 1 GB, and allowing for some memory overhead, 2GB. ~  500 ms, by far past the limits.  An inverse calculation can be used to find the 'cutoff' at which simply reading from memory is already a bottleneck.  This comes to 200k edges, (percentile 5  nines).
+
+ The argument about reading from memory suggests it is not possible to meet these targets, but there are several counter-arguments that dampen its implications. The first one is that these are the long tails of the degree distribution, so we can allow them to take longer and still meet targets.  The second one is that in reality the 'get all followers of A'  type queries are a smaller fraction than initially apparent: the applications are already designed to make these requests in smaller batches. The third one is that the calculation above points out that memory reads won't be done as fast, but a lot of other things will be worse than that much earlier. The network bandwitdth is presumably lower, and  even capacity of clients to consume the data. Moreover, this kind of query for 'all followers of A' will become less common if a proposed 'selective timeline materialization' strategy becomes used by the rest of the system. There are counterarguments to these points too. One is that this small but influential group of users is of some value beyond simply optimizing for 99.99% of the cases would reflect. But even strictly based on the numbers. If we mean 99.99 percent of individual <requests> must be below 10ms, then the fact that queries to these particular 0.001% of <users> are may actually translate to violating the SLA depending on how many queries go to this particular group. (Data on the correlation between query rate and degree is still forthcoming).
+
+Going deeper in the correlation reasoning of the previous paragraph. There are potential interdepencies in 'skew' that I have not considered but could be maybe worth taking a look at in data. Hypothetically, there could be dependencies in the the degree frequency skew and the query frequency for a particular or node edge. For example, the users with the most followers are also likely to be the ones growing the fastest, so insert queries to their nodes may be more frequent. It may also be the case that users with more followers tend to tweet more often, so queries asking for all their followers are executed more often. While these users may be a smaller fraction, the overall percentage of requests made for them is probably larger than 0.001%.  There are a few more observations of these types that could be investigated on the actual use logs, and that could be relevant to any design, and a potential part of the project. It could also be these things are just not significant, I'm not sure. While the complexity of this reasoning, the system designs resulting from it need not be complex.
+
+Proposal:
+Here are a couple  I have in mind:
+
+Two-tier sharding:
+This is my simpler, and better thought out method right now.
+
+The idea in this method is to classify vertices (UIDs) in 2 tiers based on the number of edges and then treat them differently based on tier. For example  queries for users with 0 - 100k  followers would be best served by storing all edges together in the same node, but a method such as hashing (including clustered consistent hashing) would distribute them among several.  Users with > 100k (100k is the cutoff order of magnitude where it is still possible to read fast in a single node) In the current graph there are less than 3k users with this number of followers,  so we can easily store an explicit lookup table (uid -> replica set) for that kind of user, or simply use a different clustered consistent hashing scheme on this set only since here it is expected we distribute work among nodes.  The explicit lookup table still can be done even if the graph grows to 500 M while keeping its degree distribution about the same.  This kind of sharding should improve performance for queries like get(A,*) without really hurting single edge queries or anything other query in particular (at the price of  the overhead of moving things from one tier to another sometimes).
+
+There are several issues to solve in this case. One is to still be able to answer queries by edge. For a vertex A in the 'power' user tier, if we query for (A, B) we won't immediately know where it is.   Also, different shard units for this same user need to go in different machines, so that we can read their edges in parallel.  Another issue is dealing with the changes in the user graph. There are scenarios where a user moves from one tier to the other. This involves something akin to range splitting (but potentially on a user by user basis) as happens in range partitioning.   When a node goes down this can probably be dealt with just as with the other schemes.  Two tier sharding can be expanding to more than 2 tiers, and how we pick who goes in which tier can be done based not only on degree but arbitrary policies.  
+
+Social sharding:
+This method still requries plenty of thinking work.
+
+The idea here is to try to partition the graph in some way that keeps tightly connected components together (I'd look at literature about this, which I know is out there). This can be done offline, but we still need to have a concise representation of the look up table available to do the online lookups express the results of any offline algorithms. Additionally there is a problem if the graph structure changes a lot over time, ie how do we keep the sharding up to date if every time we update it it may change enough that a lot of work is needed to update it.  Still, the fine grained partitioning paper offers some options for concisely representing /compressing the look up table in some cases. The advantage here is that for queries such as intersect_edges(A,B), if this kind of query occurs often when A follows B, then by splitting the graph this way we gain the advantages of not just hashing by left-endpoint, but looking up edges(A, *), and edges(B, *) and the subsequent intersection can be done at the node, and only the result set sent back to the API server.
+
+Lastly, besides the the two main queries, the are other types of queries such as "get(A,) Union get(B, *)" or "get(A,, follows) Intersection get(B, *, follower)". This last query occurs for example when a user visits the timeline of another.  Since presumably this happens more for users that follow one another, then encouraging the placement of adjacent nodes in the same shard enables us to push intersections into single nodes a larger fraction of the time. There are also more experimental kinds of operations that do not exist at this point such as explore 2 hops away.
+
+Implementation:
+Background:
+Right now there is one proposed clutch sharding library architecture using Zookeeper in a way similar to the PNUTS tablet manager: storing the 'true' state of the nodes and the sharding map and the API servers as the PNUTS routers In the Fine Grained partitioning paper this truth exists distributed at the data nodes, and leader election for replicas is done at that level. In all cases the routers keep up with it on a best effort basis.   They do this though a series of techniques that keep inconsistency windows small (piggyback stuff on queries in FGP papeer, suscribing to zK in Twitter DS design).
+
+In the Fine Grained partitioning paper the cost of inconsistency is extra communication and wait overhead (occasionally broadcast to all nodes to find out the truth, sometimes the messages are spread in 2 rounds), in Twitter DS is returning some sort of error message for failing to find the stuff. The fine grained partitioning paper also proposes a few compression techniques for the tables which could be used as the basis for some of my own.
+
+An important issue is that currently there is no plan to implement  online load transfer and repartitioning for the Graph store.  This makes hashing the only  way of statically avoiding hotspots.  If some other alternative strategy is used, then we need to be able to dynamically transfer and partition shards to adjust to imbalances.  This is typically done with strategies such as Range partitioning.  But these load balancing primitives are also needed for all the strategies that somehow depend on the graph structure: as the graph changes, the sharding needs to update too.  An additional practical concern is limiting the amount of extra load and contention these operations require and the correlation of this extra balancing load with high load events in the system.
+
+Proposal:
+I'm keeping track of the clutch sharding repo, and have let Stu know  some primitives that  may  make it easier to hook into it.   The main implementation challenges at this point seem to be:
+
+Figuring out ways to compress a potentially large lookup table. This can be redefined,  eg by only sampling part of the graph (and dealing with the rest in some default way)
+Working around clutch library limitations as I realize them, perhaps by  simply adding an extra service behind it.
+Implementing some shard  transfer primitives
+Implementing some simulation classes to benchmark my stuff  independently of whether there is a fully working system (also just for testing)
+Implementing the sharding strategies themselves (ie some may require offline learning of some graph properties)
+Who knows, maybe need to implement something to get information I need (eg on Monday I will meet with Matt to look into correlations between user edge degree (# followers) and frequency of queries. other tasks like these will appear
+be worked around of by storing a reference to a different state store rather than the value. On the load balancing side, I need to think about the necessary operations further, but I believe I can implement the necessary transfer and rebalancing operations for my particular sharding strategies.
+
+Benchmarks:
+Background:
+The goal here is to measure how much better or worse these perform, after fixing the number of machines, based on the empirical patterns found earlier in the design part.  Workloads could be derived from real operation data or hypothetical data with skews like done in the PNUTS paper.
+
+Proposal:
+Will want to see how the viability of the strategy (eg amount of state needed for lookup table) changes as the graph changes. Eg. in simulation vary the degree skew.
+Will want to vary the operation composition.
+Will want to quantify time and space cost of running the custom shard code vs. will want to quantify performance of the full graph data system  with custom shard
+Will want to quantify cost of having to move data around every now and then (since you need this when you don't hash)
+in the case of a strategy where I need to crawl the graph offline, benchmark the process itself.
+Bibliography
+-Fine Grained partitioning paper, Schism paper (from my MIT advisor.  sharding method + implementation ideas)
+
+-Ruhl and Karger paper on online rebalancing (applicable to range and hash partitioning
+
