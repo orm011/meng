@@ -6,19 +6,23 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 //most basic sharding. edge goes to  a Token.
 public class TwoTierHashSharding implements ISharding
 {
+  IShardPrimitives state;
+
   Collection<Shard> shards;
   Collection<Pair<Vertex,Integer>> exceptions;
   HierarchicalHashFunction hashfun = new TwoTierHashSharding.HierarchicalHashFunction();
   //the exceptions are also implicit in the shards collection.
   //basically, at query time we notice oversized vertices.
 
-  public TwoTierHashSharding(){
-      
+  public TwoTierHashSharding(IShardPrimitives zkState){
+       state = zkState;
   }
 
   @Override public Shard getShardForEdgeQuery(Edge e) {
@@ -49,6 +53,26 @@ public class TwoTierHashSharding implements ISharding
     //and see if we should promote it this vertex based on that
     //this may involve adding an exception, or updating an entry already in the exceptions list, or
     // removing one
+
+
+  }
+
+  private void promoteVertex(Vertex v){
+    Pair<Token, Token> ends = hashfun.hash(v);
+    Shard low = new Shard(ends.getLeft());
+    Shard high = new Shard(ends.getRight());
+
+    //TODO: this should not be a simple add, but an add
+    //to a some kind of sorted Data structure.
+    List<Shard> currentShards = state.getShardList();
+    currentShards.add(low);
+    currentShards.add(high);
+
+    //now set the map from shards
+    Set<Node> lowNodes = new HashSet<Node>();
+    Set<Node> highNodes = new HashSet<Node>();
+    state.setReplicaSet(low, lowNodes);
+    state.setReplicaSet(high, highNodes);
   }
 
   static class HierarchicalHashFunction implements IHashFunction {

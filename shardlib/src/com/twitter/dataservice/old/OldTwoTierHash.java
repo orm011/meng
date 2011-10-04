@@ -1,6 +1,5 @@
 package com.twitter.dataservice.old;
 
-import com.twitter.dataservice.sharding.IKeyToNode;
 import com.twitter.dataservice.sharding.IShardPrimitives;
 import com.twitter.dataservice.shardutils.*;
 
@@ -8,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-public class OldTwoTierHash implements IKeyToNode
+public class OldTwoTierHash
 {
    private IShardPrimitives state;
  

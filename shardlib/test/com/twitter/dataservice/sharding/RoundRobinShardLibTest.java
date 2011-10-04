@@ -22,10 +22,13 @@ public class RoundRobinShardLibTest extends TestCase {
     Node r2 = dh.getNode(testEdge2);
     Node r3 = getUniqueNodeFromCollection(dh.getNodes(testVer));
     Node r4 = getUniqueNodeFromCollection(dh.getNodes(testVer1));
-
+    Node r5 = getUniqueNodeFromCollection(dh.getNodes(new Vertex(10,0)));
+    
     Assert.assertEquals(r1, r2);
     Assert.assertEquals(r2, r3);
-    Assert.assertEquals(r3, r4);
+    Assert.assertEquals(r3, new Node(0));
+    Assert.assertEquals(r4, new Node(1));
+    Assert.assertEquals(r5, new Node(0));
   }
 
   private Node getUniqueNodeFromCollection(Collection<Node> se){
@@ -36,5 +39,4 @@ public class RoundRobinShardLibTest extends TestCase {
     }
     return answer;
   }
-
 }

@@ -1,6 +1,9 @@
 package com.twitter.dataservice.sharding;
 
-import com.twitter.dataservice.shardlib.*;
+import com.twitter.dataservice.shardutils.Edge;
+import com.twitter.dataservice.shardutils.Node;
+import com.twitter.dataservice.shardutils.Shard;
+import com.twitter.dataservice.shardutils.Vertex;
 
 import java.util.*;
 
