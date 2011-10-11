@@ -18,12 +18,14 @@ public class Edge
         return ends.getRight();
     }
     
+    
+    //used only by a function if it were to hash each vertex as a whole
     public byte[] toByteArray(){
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         byte[] left = getLeftEndpoint().toByteArray();
         byte[] right = getRightEndpoint().toByteArray();
         baos.write(left, 0, left.length);
-        baos.write(right, 0, right.length);
+        baos.write(right, left.length, right.length);
         return baos.toByteArray();
     }
 }

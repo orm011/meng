@@ -1,8 +1,10 @@
 package com.twitter.dataservice.shardutils;
 
 import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 
-public class Vertex
+public class Vertex implements Hashable
 {
     final int id;
 
@@ -16,11 +18,25 @@ public class Vertex
         this.id = id;
         this.workFactor = workFactor;
     }
+    
+    public Vertex(int id){
+        this.id = id;
+        this.workFactor = 0;
+    }
 
     
     public byte[] toByteArray(){
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      baos.write(id);
+        DataOutputStream dos = new DataOutputStream(baos);
+       
+        try{
+            dos.writeUTF(Vertex.class.toString());
+            dos.writeInt(id);
+        } catch (IOException e) {
+            //its a byte array internally, so this is not a typical error
+            throw new RuntimeException(e);
+        }
+        
         return baos.toByteArray();
     }
 
@@ -32,8 +48,29 @@ public class Vertex
     return String.format("Vertex: id: %d, workFactor: %d", id, getWorkFactor());
   }
 
-  @Override public boolean equals(Object o) {
-    return (o instanceof Vertex) && (((Vertex)o).id == id);
-  }
+  @Override
+public int hashCode()
+{
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + id;
+    return result;
+}
+
+
+@Override
+public boolean equals(Object obj)
+{
+    if (this == obj)
+        return true;
+    if (obj == null)
+        return false;
+    if (getClass() != obj.getClass())
+        return false;
+    Vertex other = (Vertex) obj;
+    if (id != other.id)
+        return false;
+    return true;
+}
 
 }

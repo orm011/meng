@@ -9,6 +9,16 @@ public class Token implements Comparable<Token>
   public Token(byte[] bytes) {
     this.bytes = Arrays.copyOf(bytes,bytes.length);
   }
+  
+  @Override
+  public String toString(){
+      StringBuilder sb = new StringBuilder(2*bytes.length);
+      for (byte b: bytes){
+          sb.append(String.format("%02x", b));
+      }
+      
+      return "Token: " + sb.toString();
+  }
 
   @Override
   public boolean equals(Object o) {

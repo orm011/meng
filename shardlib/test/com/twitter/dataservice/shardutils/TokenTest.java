@@ -143,5 +143,30 @@ public class TokenTest
         
         Assert.assertEquals(fromSet.hasNext(), fromArray.hasNext());
         
+        //now add the same elements, nothing should change (comparison should detect equality)
+        mySortedSet.addAll(Arrays.asList(tokenArray3));
+        
+        Iterator<Token> iterateAgain = mySortedSet.iterator();
+        fromArray = Arrays.asList(tokenArray1).iterator();
+        while (iterateAgain.hasNext() && fromArray.hasNext()){
+            Assert.assertEquals(iterateAgain.next(), fromArray.next());
+        }
+        Assert.assertEquals(iterateAgain.hasNext(), fromArray.hasNext());
+                
     }
+    
+    
+    //not really a unit test, but more an exploration test. delete later.
+    @Test
+    public void testingSortedSetMethods(){
+           SortedSet<Token> ss = new TreeSet<Token>();
+           ss.add(new Token(new byte[]{effeff, effeff}));
+           ss.add(new Token(new byte[]{eightzero, zerozero}));
+           ss.add(new Token(new byte[]{zerozero, zerozero}));
+           
+           Token middle = new Token(new byte[]{zeroeff, zerozero});               
+           Assert.assertTrue(ss.subSet(middle, ss.last()).size() == 1);           
+    }
+    
+    
 }

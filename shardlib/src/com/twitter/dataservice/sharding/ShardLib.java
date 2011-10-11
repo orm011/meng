@@ -2,6 +2,7 @@ package com.twitter.dataservice.sharding;
 
 import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Node;
+import com.twitter.dataservice.shardutils.Pair;
 import com.twitter.dataservice.shardutils.Shard;
 import com.twitter.dataservice.shardutils.Vertex;
 
@@ -13,27 +14,26 @@ import java.util.*;
 public class ShardLib implements IShardLib
 {
     ISharding sharding;
-    IShardPrimitives state;
+ //   IShardPrimitives state;
 
     //my approaches would be implemented as
     //different 'ISharding'
     public ShardLib(ISharding keyToShardStrategy, IShardPrimitives zkState){
         sharding = keyToShardStrategy;
-        state = zkState;
+        //state = zkState;
     }
 
     public Node getNode(Edge e){
-        Shard relevantShard = sharding.getShardForEdgeQuery(e);
-        Set<Node> reps = state.getReplicaSet(relevantShard);
-        return getNodeForQuery(reps);
+        Pair<Shard, Collection<Node>> relevantShard = sharding.getShardForEdgeQuery(e);
+        return getNodeForQuery(relevantShard.getRight());
     }
     
     public Collection<Node> getNodes(Vertex v){
-        Collection<Shard> involved= sharding.getShardForVertexQuery(v);
-        List<Set<Node>> optionList = new LinkedList<Set<Node>>();
+        List<Pair<Shard, Collection<Node>>> involved= sharding.getShardForVertexQuery(v);
+        List<Collection<Node>> optionList = new LinkedList<Collection<Node>>();
 
-        for (Shard sh: involved) {
-          optionList.add(state.getReplicaSet(sh));
+        for (Pair<Shard, Collection<Node>> p: involved) {
+          optionList.add(p.getRight());
         }
 
         return getNodesForQuery(optionList);
@@ -42,8 +42,8 @@ public class ShardLib implements IShardLib
 
   // here you can place logic for things like considering
   // mastership and live nodes
-    private List<Node> getNodesForQuery(List<Set<Node>> options){
-        Iterator<Set<Node>> it = options.iterator();
+    private List<Node> getNodesForQuery(List<Collection<Node>> options){
+        Iterator<Collection<Node>> it = options.iterator();
         List<Node> answer = new LinkedList<Node>();
 
         assert it.hasNext();//non-empty
@@ -54,7 +54,7 @@ public class ShardLib implements IShardLib
         return answer;
     }
 
-    private Node getNodeForQuery(Set<Node> options){
+    private Node getNodeForQuery(Collection<Node> options){
         Iterator<Node> nodeit = options.iterator();
         assert nodeit.hasNext();
         Node answer = nodeit.next();

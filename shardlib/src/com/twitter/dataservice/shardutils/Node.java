@@ -1,6 +1,8 @@
 package com.twitter.dataservice.shardutils;
 
-public class Node
+import java.io.ByteArrayOutputStream;
+
+public class Node implements Hashable
 {
   int nodeNumber;
 
@@ -18,5 +20,11 @@ public class Node
 
   @Override public String toString() {
     return String.format("Node: %x", nodeNumber);
+  }
+  
+   public byte[] toByteArray(){
+       ByteArrayOutputStream baos = new ByteArrayOutputStream();
+       baos.write(nodeNumber);
+       return baos.toByteArray();
   }
 }

@@ -1,6 +1,6 @@
 package com.twitter.dataservice.shardutils;
 
-public class Shard
+public class Shard implements Comparable<Shard>
 {
     int id;
     Token lowerEnd;
@@ -12,4 +12,11 @@ public class Shard
   public Token getLowerEnd(){
     return lowerEnd;
   }
+  
+@Override
+public int compareTo(Shard o)
+{
+    return this.lowerEnd.compareTo(o.lowerEnd);
+}
+ 
 }
