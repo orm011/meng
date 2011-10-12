@@ -5,6 +5,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +14,7 @@ import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -27,6 +30,9 @@ import com.twitter.dataservice.shardutils.Vertex;
 public class TwoTierHashSharding implements ISharding
 {
 
+  public int getNumShards(){
+      return shards.size();
+  }
   SortedMap<Token,Node> shards = new TreeMap<Token, Node>();
   Map<Vertex,Integer> exceptions; //figure out how to populate this and if we need to.
 
@@ -45,6 +51,9 @@ public class TwoTierHashSharding implements ISharding
   
   //for test purposes TODO: remove this/make private, somehow
   public TwoTierHashSharding(List<Pair<Token, Node>> shardState){
+      if (shardState.size() == 0)
+          throw new IllegalArgumentException("system must have at least one shard");
+      
       for (Pair<Token, Node> pair : shardState){
           shards.put(pair.getLeft(), pair.getRight());
       }
@@ -66,67 +75,32 @@ public class TwoTierHashSharding implements ISharding
   //Methods to read the shard state  
   @Override public Pair<Shard,Collection<Node>> getShardForEdgeQuery(Edge e) {
         Token tok = hashfun.hash(e);
-        assert !shards.isEmpty();
-  
-        // search within shardlist for an individual shard where it fits.
-        // deal with wrap-around
-        CycleIterator<Map.Entry<Token,Node>> it = new CycleIterator<Map.Entry<Token,Node>>(shards.entrySet(), 
-                shards.tailMap(tok).entrySet().iterator());
-    
-        CycleIterator<Map.Entry<Token,Node>> ot = new CycleIterator<Map.Entry<Token,Node>>(shards.entrySet(), 
-                shards.tailMap(tok).entrySet().iterator());
-    
-        SlidingWindowCycleIterator<Map.Entry<Token,Node>> window = new SlidingWindowCycleIterator<Map.Entry<Token,Node>>(ot, 
-                TwoTierHashSharding.REPLICATION_FACTOR);
+        List<Pair<Token, List<Node>>> queryResult = hashRingRangeQuery(new Pair<Token, Token>(tok, tok));
         
-        List<Node> nodes = new LinkedList<Node>();
-        assert it.hasNext();
+        assert queryResult.size() == 1;
+        Pair<Token, List<Node>> result = queryResult.get(0);
         
-        Token shardtok = it.next().getKey();
-        List<Map.Entry<Token, Node>> successors = window.next();
-        for (Map.Entry<Token, Node> mape: successors){
-            nodes.add(mape.getValue());
-        }
-        
-        return new Pair<Shard, Collection<Node>>(new Shard(shardtok),  nodes);
+        return new Pair<Shard, Collection<Node>>(new Shard(result.getLeft()), result.getRight());
   }
   
   public List<Pair<Shard,Collection<Node>>> getShardForVertexQuery(Vertex v) {
       List<Pair<Shard,Collection<Node>>> answer = new LinkedList<Pair<Shard,Collection<Node>>>();
       Pair<Token,Token> ends = hashfun.hash(v);
-      SortedMap<Token, Node> tail = shards.tailMap(ends.getLeft());
- 
-      CycleIterator<Map.Entry<Token,Node>> it = new CycleIterator<Map.Entry<Token,Node>>(shards.entrySet(), 
-              tail.entrySet().iterator());
-  
-      CycleIterator<Map.Entry<Token,Node>> ot = new CycleIterator<Map.Entry<Token,Node>>(shards.entrySet(), 
-              tail.entrySet().iterator());
-      
-      SlidingWindowCycleIterator<Map.Entry<Token,Node>> window = new SlidingWindowCycleIterator<Map.Entry<Token,Node>>(ot, 
-              TwoTierHashSharding.REPLICATION_FACTOR);
-  
-      {
-          Map.Entry<Token, Node> ent = null;
-          //iterator deals with wrap
-          while(it.hasNext() && !it.wrappedAround() && (ent = it.next()).getKey().compareTo(ends.getRight()) <= 0){
-              LinkedList<Node> nodes = new LinkedList<Node>();
-              
-              List<Map.Entry<Token, Node>> entries = window.next();
-              for (Map.Entry<Token, Node> mape: entries){
-                  nodes.add(mape.getValue());
-              }
-              
-              answer.add(new Pair<Shard, Collection<Node>>(new Shard(ent.getKey()), nodes));
-          }
+
+      List<Pair<Token, List<Node>>> queryResult = hashRingRangeQuery(ends);
+      for (Pair<Token, List<Node>> pr : queryResult){
+          answer.add(new Pair<Shard, Collection<Node>>(new Shard(pr.getLeft()), pr.getRight())); 
       }
-            
+      
       return answer;
   }
 
-  //gets a view of the shard tokens within the range given as input together with the respective
-  //replicas implied by the replication factor
-  public List<Pair<Token, Collection<Node>>> hashRingRangeQuery(Pair<Token, Token> tokenRange){
-      List<Pair<Token,Collection<Node>>> answer = new LinkedList<Pair<Token,Collection<Node>>>();
+  //gets a view of the shard-tokens within the input range, 
+  //with a corresponding *meaningfully sorted* set of replicas
+  //the left end of the tokenRange should be smaller than the rightEnd
+  public List<Pair<Token, List<Node>>> hashRingRangeQuery(Pair<Token, Token> tokenRange){
+      Map<Token,Set<Node>> prelim = new LinkedHashMap<Token,Set<Node>>();
+      
       SortedMap<Token, Node> tail = shards.tailMap(tokenRange.getLeft());
  
       CycleIterator<Map.Entry<Token,Node>> it = new CycleIterator<Map.Entry<Token,Node>>(shards.entrySet(), 
@@ -140,17 +114,6 @@ public class TwoTierHashSharding implements ISharding
   
       {
           Map.Entry<Token, Node> ent = null;
-//          //iterator deals with wrap
-//          System.out.println("hasNext?" + it.hasNext());
-//          System.out.println("wrappedAround?" + it.wrappedAround());
-//          
-//          System.out.println("it.next().getKey()" +  (ent = it.next()).getKey());
-//          System.out.println("tokenRange.getRight()" + tokenRange.getRight());
-//          System.out.println("ent.compareTo(blah blah)" + ent.getKey().compareTo(tokenRange.getRight()));
-//          System.out.println("wrappedAround after?" + it.wrappedAround());
-//          System.out.println("it.next().getKey()" + (ent = it.next()d).getKey());
-//          System.out.println("wrappedAround?" + it.wrappedAround());
-          
           
           if (!it.hasNext()) {
               throw new IllegalArgumentException("should have at least one shard");
@@ -158,18 +121,24 @@ public class TwoTierHashSharding implements ISharding
           
           do {
            ent = it.next();
-           LinkedList<Node> nodes = new LinkedList<Node>();
+
+           Set<Node> nodes = new LinkedHashSet<Node>();
            
            List<Map.Entry<Token, Node>> entries = window.next();
            for (Map.Entry<Token, Node> mape: entries){
                nodes.add(mape.getValue());
            }
            
-           answer.add(new Pair<Token, Collection<Node>>(ent.getKey(), nodes));
-          } while(ent.getKey().compareTo(tokenRange.getRight()) <= 0 && !it.wrappedAround());          
+           prelim.put(ent.getKey(), nodes);
+          } while(ent.getKey().compareTo(tokenRange.getRight()) < 0 && !it.wrappedAround());          
       }
       
-      return answer;
+      List<Pair<Token, List<Node>>> toReturn = new LinkedList<Pair<Token, List<Node>>>();
+      for (Map.Entry<Token, Set<Node>> mentry: prelim.entrySet()){
+          toReturn.add(new Pair<Token, List<Node>>(mentry.getKey(), new LinkedList<Node>(mentry.getValue())));
+      }
+      
+      return toReturn;
   }
   
   //TODO: clean up by making a new tree class? and putting stuff there?
@@ -182,7 +151,10 @@ public class TwoTierHashSharding implements ISharding
       private boolean wrapped = false;
       
       public CycleIterator(Set<K> col){
+          if (col == null || col.size() == 0)
+              throw new IllegalArgumentException("no null or empty collections accepted");
           this.col = col;
+          it = col.iterator();
       }
       
       //assumes the iteration order of the set is consistent with the given iterator,
@@ -201,13 +173,14 @@ public class TwoTierHashSharding implements ISharding
       @Override
       public K next() throws NoSuchElementException {
           if (!this.hasNext()){
-              throw new NoSuchElementException();
-          } else if (it == null || !it.hasNext()){
-              it = col.iterator();
+                  throw new NoSuchElementException();              
           }
-                    
+
+          if (wrapped = !it.hasNext())
+              it = col.iterator();
+              
           K toReturn = it.next();
-          wrapped = !it.hasNext();          
+          
           return toReturn;
       }
       
@@ -310,11 +283,9 @@ public class TwoTierHashSharding implements ISharding
   }
 
   private void demoteVertex(Vertex v){
+  
   }
   
-  private List<Token> partitionRange(Vertex v){
-      return null;
-  }
   
   private void promoteVertex(Vertex v){
       
@@ -392,9 +363,7 @@ public class TwoTierHashSharding implements ISharding
           
           results.add(new Pair<Token, Node>(new Token(ringPos), n));
       }
-      
-      
-      
+            
       return results;      
   }
   

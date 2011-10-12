@@ -1,13 +1,16 @@
 package com.twitter.dataservice.shardutils;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 
 public class Token implements Comparable<Token>
 {
   final byte[] bytes;
-
+  final BigInteger position;
+  
   public Token(byte[] bytes) {
     this.bytes = Arrays.copyOf(bytes,bytes.length);
+    this.position = new BigInteger(1, bytes);
   }
   
   @Override
