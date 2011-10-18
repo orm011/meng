@@ -263,21 +263,21 @@ public class TwoTierHashTest
         }
     }
         
-//    @Test
-//    public void testShardingAfterNodeAddress()
-//    {
-//        Vertex v = new Vertex(1);
-//        TwoTierHashSharding.HierarchicalHashFunction hashfun = new TwoTierHashSharding.HierarchicalHashFunction();        
-//        Pair<Token,Token> pt = hashfun.hash(v); 
-//        
-//        List<Pair<Shard, Collection<Node>>> answer = tths.getShardForVertexQuery(v);
-//        
-//        //must have exactly one node for this example
-//        Assert.assertTrue(answer.size()  ==  1);
-//        for (Pair<Shard, Collection<Node>> p: answer)
-//            Assert.assertTrue(p.getLeft().getLowerEnd().compareTo(pt.getLeft()) >= 0 
-//                        || p.getLeft().getLowerEnd().equals(new Token(bytez)));        
-//    }
+    @Test
+    public void testShardingAfterNodeAddress()
+    {
+        Vertex v = new Vertex(1);
+        TwoTierHashSharding.HierarchicalHashFunction hashfun = new TwoTierHashSharding.HierarchicalHashFunction();        
+        Pair<Token,Token> pt = hashfun.hash(v); 
+        System.out.println(pt.getLeft());
+        System.out.println(pt.getRight());
+        List<Pair<Shard, Collection<Node>>> answer = tths.getShardForVertexQuery(v);
+
+        //must have exactly one node for this example
+        Assert.assertTrue(answer.size()  ==  1);     
+        System.out.println(answer.iterator().next().getLeft().getUpperEndToken());
+        System.out.println();
+    }
     
 
 }

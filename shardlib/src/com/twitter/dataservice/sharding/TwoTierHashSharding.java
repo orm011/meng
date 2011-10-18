@@ -266,7 +266,7 @@ public class TwoTierHashSharding implements ISharding
   private final static int SHARDS_PER_SPECIAL_NODE = 4;
   //private final static int OPTIMAL_SINGLE_NODE_SHARD_SIZE = PROMOTE_NODE;
   
-  void maybeUpdateVertexCategory(Vertex v, Integer count){
+  void maybeUpdateVertex(Vertex v, Integer count){
     //look at the exceptions map and at the count and see if we should reevalute this vertex's category
      //TODO: implement more complex policy based on number of shards desirable
     
@@ -283,23 +283,39 @@ public class TwoTierHashSharding implements ISharding
   }
 
   private void demoteVertex(Vertex v){
-  
+      //update clutch
+      //wait on clutch state update
+      //update local
   }
   
   
   private void promoteVertex(Vertex v){
       
-     //local state changes
-    
+      //update clutch if possible
+      //wait on clutch assignment states update
+      //update local to reflect those changes
+           
     //List<Pair<Token, Node>> newShards = hashfun.hashPartition(, v); 
     
     //TODO: this should not be a simple add, but an add
     //to a some kind of sorted Data structure.
     //now set the map from shards
-//    Set<Node> lowNodes = new HashSet<Node>();
-//    Set<Node> highNodes = new HashSet<Node>();
-//    state.setReplicaSet(low, lowNodes);
-//    state.setReplicaSet(high, highNodes);
+//Set<Node> lowNodes = new HashSet<Node>();
+//Set<Node> highNodes = new HashSet<Node>();
+//state.setReplicaSet(low, lowNodes);
+//state.setReplicaSet(high, highNodes);
+  }
+  
+  private void internalPromoteVertex(Vertex v){
+      Pair<Token, Token> pt = hashfun.hash(v);
+      
+      //option 1:
+      // List<Token> parts = Token.split(pt.getLeft(), pt.getRight(), 2);      
+      //TODO: shards.put(tk, ??)  how to make it balanced? how to make it alright when new node added?
+      
+      //option 2: pick nodes, hash, use pair (hash(node_i), nodei)
+      //v 
+      //
   }
 
   public static class HierarchicalHashFunction implements IHashFunction {
@@ -366,7 +382,6 @@ public class TwoTierHashSharding implements ISharding
             
       return results;      
   }
-  
   
 }
   

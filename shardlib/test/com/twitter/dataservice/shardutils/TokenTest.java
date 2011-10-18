@@ -2,6 +2,7 @@ package com.twitter.dataservice.shardutils;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -25,7 +26,7 @@ public class TokenTest
     final byte[] significantCases = new byte[] {zerozero, zeroone, zeroeff, eightzero, effeff};
     
     private void AssertReflexivity(Token token1){
-        Token tok1copy = new Token(token1.bytes);
+        Token tok1copy = new Token(token1.position.toByteArray());
         
         //expects reflexivity and consistency among comparison and equals
         Assert.assertEquals(token1, tok1copy);
@@ -97,20 +98,9 @@ public class TokenTest
         
         Token token1 = new Token(new byte[]{});
         Token token2 = new Token(new byte[]{effeff});
-        //unequal length tokens
-        try {
-            token1.compareTo(token2);
-            Assert.fail("comparing tokens of different length should fail");
-        } catch (ClassCastException cce) {
-            try {
-                token2.compareTo(token1);
-                Assert.fail("comparing tokens of different length should fail in both directions");
-            } catch (ClassCastException incce){
-                Assert.assertFalse(token1.equals(token2));
-                Assert.assertFalse(token2.equals(token1));
-            }
-        }
-        
+        Assert.assertFalse(token1.equals(token2));
+        Assert.assertFalse(token2.equals(token1));
+         
     }   
 
     @Test
@@ -158,15 +148,22 @@ public class TokenTest
     
     //not really a unit test, but more an exploration test. delete later.
     @Test
-    public void testingSortedSetMethods(){
-           SortedSet<Token> ss = new TreeSet<Token>();
-           ss.add(new Token(new byte[]{effeff, effeff}));
-           ss.add(new Token(new byte[]{eightzero, zerozero}));
-           ss.add(new Token(new byte[]{zerozero, zerozero}));
-           
-           Token middle = new Token(new byte[]{zeroeff, zerozero});               
-           Assert.assertTrue(ss.subSet(middle, ss.last()).size() == 1);           
+    public void splitTest(){
+        
+        Token ZERO = new Token(new byte[]{zerozero});
+        Token FF = new Token (new byte[]{effeff});
+
+        
+        try {
+            List<Token> toklist = Token.split(ZERO, ZERO, 1);
+            Assert.fail();
+        } catch (IllegalArgumentException e){}
+        
+        List<Token> secondTry = Token.split(ZERO, FF, 2);
+        Assert.assertEquals(2, secondTry.size());
+        Token EXPECTED = new Token(new byte[]{(byte) 0x80});
+        Assert.assertEquals(EXPECTED, secondTry.get(0));
+        Assert.assertEquals(FF, secondTry.get(1));
     }
-    
-    
+        
 }
