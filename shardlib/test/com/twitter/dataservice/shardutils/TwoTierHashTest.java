@@ -1,16 +1,11 @@
 package com.twitter.dataservice.shardutils;
 
-import java.lang.reflect.Array;
-import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -267,16 +262,76 @@ public class TwoTierHashTest
     public void testShardingAfterNodeAddress()
     {
         Vertex v = new Vertex(1);
-        TwoTierHashSharding.HierarchicalHashFunction hashfun = new TwoTierHashSharding.HierarchicalHashFunction();        
+        HierarchicalHashFunction hashfun = new HierarchicalHashFunction();        
         Pair<Token,Token> pt = hashfun.hash(v); 
-        System.out.println(pt.getLeft());
-        System.out.println(pt.getRight());
         List<Pair<Shard, Collection<Node>>> answer = tths.getShardForVertexQuery(v);
 
         //must have exactly one node for this example
         Assert.assertTrue(answer.size()  ==  1);     
-        System.out.println(answer.iterator().next().getLeft().getUpperEndToken());
-        System.out.println();
+    }
+        
+    private List<Vertex> generateThisManyVertices(int howMany){
+        List<Vertex> answer = new ArrayList<Vertex>(howMany);
+     
+        for (int i = 0; i < howMany; i++){
+            answer.add(i, new Vertex(i));
+        }
+        
+        return answer;
+    }
+    
+    private List<Node> generateThisManyNodes(int howMany){
+        List<Node> answer = new ArrayList<Node>(howMany);
+     
+        for (int i = 0; i < howMany; i++){
+            answer.add(i, new Node(i));
+        }        
+        
+        return answer;
+    }
+    
+    private List<Edge> generateAllEdgeCombinations(List<Vertex> vertices){
+        List<Edge> answer = new ArrayList<Edge>(vertices.size()*vertices.size());
+        
+        for (Vertex outer : vertices){
+            for (Vertex inner : vertices){
+                answer.add(new Edge(outer, inner));
+            }
+        }
+        
+        return answer;
+    }
+    
+
+    private void assertEdgeShardConsistentWithVertexShard(TwoTierHashSharding sharding, List<Vertex> vertices){
+
+        List<Edge> edges = generateAllEdgeCombinations(vertices);
+        
+        for (Edge e: edges){            
+            Pair<Shard, Collection<Node>> edgequeryresult = sharding.getShardForEdgeQuery(e);
+            List<Pair<Shard, Collection<Node>>> vertexqueryresult = sharding.getShardForVertexQuery(e.getLeftEndpoint());
+            
+            Assert.assertTrue(vertexqueryresult.contains(edgequeryresult));
+
+        }
+    }
+    
+    @Test public void testInitialSharding()
+    {   
+        List<Vertex> verticesForQuerying = generateThisManyVertices(20);
+        List<Vertex> noExceptions = generateThisManyVertices(0);
+        
+        
+        //checks that the shard in charge of an edge is contained in the charges returned for the full vertex.
+        TwoTierHashSharding tths0 = new TwoTierHashSharding(generateThisManyVertices(0), generateThisManyNodes(1), 1, 0, 0);
+            assertEdgeShardConsistentWithVertexShard(tths0, verticesForQuerying);
+        
+        TwoTierHashSharding tths1 = new TwoTierHashSharding(generateThisManyVertices(0), generateThisManyNodes(1), 10, 0, 0);
+        assertEdgeShardConsistentWithVertexShard(tths1, verticesForQuerying);
+        
+        TwoTierHashSharding tths2 = new TwoTierHashSharding(generateThisManyVertices(0), generateThisManyNodes(1), 100000, 0, 0);
+        assertEdgeShardConsistentWithVertexShard(tths1, verticesForQuerying);
+        
     }
     
 

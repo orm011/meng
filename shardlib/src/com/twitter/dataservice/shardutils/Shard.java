@@ -18,5 +18,15 @@ public int compareTo(Shard o)
 {
     return this.upperEndToken.compareTo(o.upperEndToken);
 }
+
+@Override
+public String toString(){
+    return "Shard: " + getUpperEndToken().toString();
+}
+
+@Override
+public boolean equals(Object o){
+    return (o != null) && (o instanceof Shard) && upperEndToken.equals(((Shard)o).upperEndToken);
+}
  
 }

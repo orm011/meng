@@ -145,25 +145,106 @@ public class TokenTest
                 
     }
     
-    
-    //not really a unit test, but more an exploration test. delete later.
-    @Test
-    public void splitTest(){
+    //tests I can recover the byteRep well even though I store it as a BigInt
+    @Test public void byteRepTest(){
+        for (byte b: significantCases){
+            Assert.assertTrue(Arrays.equals(new byte[]{b}, new Token(new byte[]{b}).byteRep()));
+        }
         
-        Token ZERO = new Token(new byte[]{zerozero});
-        Token FF = new Token (new byte[]{effeff});
-
-        
-        try {
-            List<Token> toklist = Token.split(ZERO, ZERO, 1);
-            Assert.fail();
-        } catch (IllegalArgumentException e){}
-        
-        List<Token> secondTry = Token.split(ZERO, FF, 2);
-        Assert.assertEquals(2, secondTry.size());
-        Token EXPECTED = new Token(new byte[]{(byte) 0x80});
-        Assert.assertEquals(EXPECTED, secondTry.get(0));
-        Assert.assertEquals(FF, secondTry.get(1));
+        Assert.assertTrue(Arrays.equals(significantCases, new Token(significantCases).byteRep()));   
     }
+    
+    private void assertTokenArrayEquals(byte[][] expected, List<Token> tokens){
+        Assert.assertEquals(expected.length, tokens.size());
+
+        Object[] toks = tokens.toArray();
+        for (int i = 0; i < toks.length; i++){
+            Assert.assertEquals(new Token(expected[i]), toks[i]);
+        }
+    }
+
+    //why is it so hard to make an array in Java.
+    
+    private byte[] makeArr(int first, int second, int third, int fourth){
+        return new byte[]{(byte) first, (byte) second, (byte) third, (byte) fourth};
+    }
+    private byte[] makeArr(int first, int second, int third){
+        return new byte[]{(byte) first, (byte) second, (byte) third};
+    }
+    private byte[] makeArr(int first, int second){
+        return new byte[]{(byte) first, (byte) second};
+    }
+    
+    private byte[] makeArr(int first){
+        return new byte[]{(byte) first};
+    }
+    
+    @Test public void newSplitTest(){
+        byte[][] expected1 = new byte[][]{
+                makeArr(0x00, 0x40),
+                makeArr(0x00, 0x80),
+                makeArr(0x00, 0xc0),
+                makeArr(0x00, 0xff)
+        };
         
+        byte[][] expected1b = new byte[][]{
+                makeArr(0x00, 0x55),
+                makeArr(0x00, 0xaa),
+                makeArr(0x00, 0xff)
+        };
+        
+        byte[][] expected1c = new byte[][]{
+                makeArr(0x00, 0x80),
+                makeArr(0x00, 0xff)
+        };
+        
+        byte[][] expected1d = new byte[][]{
+                makeArr(0x00, 0xff)
+        };
+        
+        List<Token> ans1 = Token.splitPrefixImpliedRange(makeArr(0x00), 2, 1, 4);
+        assertTokenArrayEquals(expected1, ans1);
+        List<Token> ans1b = Token.splitPrefixImpliedRange(makeArr(0x00), 2, 1, 3);
+        assertTokenArrayEquals(expected1b, ans1b);
+        List<Token> ans1c = Token.splitPrefixImpliedRange(makeArr(0x00), 2, 1, 2);
+        assertTokenArrayEquals(expected1c, ans1c);
+        List<Token> ans1d = Token.splitPrefixImpliedRange(makeArr(0x00), 2, 1, 1);
+        assertTokenArrayEquals(expected1d, ans1d);
+        
+        byte[][] expected2 = new byte[][]{
+                makeArr(0x40, 0xff),
+                makeArr(0x80, 0xff),
+                makeArr(0xc0, 0xff),
+                makeArr(0xff, 0xff)
+        };
+        List<Token> ans2 = Token.splitPrefixImpliedRange(new byte[]{}, 2, 1, 4);
+        assertTokenArrayEquals(expected2, ans2);
+
+        byte[][] expected3 = new byte[][]{
+                makeArr(0x40, 0x00, 0xff, 0xff),
+                makeArr(0x80, 0x00, 0xff, 0xff),
+                makeArr(0xc0, 0x00, 0xff, 0xff),
+                makeArr(0xff, 0xff, 0xff, 0xff)
+        };
+        List<Token> ans3 = Token.splitFullTokenSpace(2, 4);
+        assertTokenArrayEquals(expected3, ans3);
+                
+        byte[][] expected4 = new byte[][]{
+                makeArr(0x11, 0x40),
+                makeArr(0x11, 0x80),
+                makeArr(0x11, 0xc0),
+                makeArr(0x11, 0xff)
+        };
+        List<Token> ans4 = Token.splitNodeImpliedRange(new Token(new byte[]{0x11}), 4);
+        assertTokenArrayEquals(expected4, ans4);
+        
+        byte[][] expected5 = new byte[][]{
+                makeArr(0x11, 0x40, 0xff),
+                makeArr(0x11, 0x80, 0xff),
+                makeArr(0x11, 0xc0, 0xff),
+                makeArr(0x11, 0xff, 0xff),
+        };
+        List<Token> ans5 = Token.splitPrefixImpliedRange(new byte[]{(byte) 0x11}, 3, 1, 4);
+        assertTokenArrayEquals(expected5, ans5);
+    }
 }

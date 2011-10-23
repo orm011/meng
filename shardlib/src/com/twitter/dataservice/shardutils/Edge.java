@@ -28,4 +28,8 @@ public class Edge
         baos.write(right, left.length, right.length);
         return baos.toByteArray();
     }
+    
+    public String toString(){
+        return "Edge: " + ends.getLeft().toString()  + " " + ends.getRight().toString();
+    }
 }

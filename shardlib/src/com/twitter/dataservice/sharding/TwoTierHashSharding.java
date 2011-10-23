@@ -1,8 +1,6 @@
 package com.twitter.dataservice.sharding;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -16,10 +14,11 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import com.twitter.dataservice.shardutils.Edge;
-import com.twitter.dataservice.shardutils.IHashFunction;
+import com.twitter.dataservice.shardutils.HierarchicalHashFunction;
 import com.twitter.dataservice.shardutils.Node;
 import com.twitter.dataservice.shardutils.Pair;
 import com.twitter.dataservice.shardutils.Shard;
@@ -33,10 +32,16 @@ public class TwoTierHashSharding implements ISharding
   public int getNumShards(){
       return shards.size();
   }
+  
+  
+  private final static int DEFAULT_NUMSHARDS = 1000;
+  private final static int DEFAULT_EXCEPTION_TIER_SPLIT = 2;
+  private final static int DEFAULT_EXCEPTION_TIER_NUM_NODES = 2;
+  
   SortedMap<Token,Node> shards = new TreeMap<Token, Node>();
   Map<Vertex,Integer> exceptions; //figure out how to populate this and if we need to.
 
-  final static HierarchicalHashFunction hashfun = new TwoTierHashSharding.HierarchicalHashFunction();
+  final static HierarchicalHashFunction hashfun = new HierarchicalHashFunction();
 
   IShardPrimitives state; //not sure about this reference.
   
@@ -44,10 +49,41 @@ public class TwoTierHashSharding implements ISharding
   //Methods to keep state up to date across all shardlibs. (todo later)
   //sets up the local state based the given zkState (initialization)
   public TwoTierHashSharding(IShardPrimitives zkState){
-       //gets snapshot and sends it
-       //need to go through each the state and populate the sorted map
-       //shards = new TreeMap<Token,Node>();     
+      //
   }
+  
+  public TwoTierHashSharding(List<Vertex> exceptions, List<Node> nodes, int numShards, int numShardsPerException, int numNodesPerException){
+      List<Token> commonShards = Token.splitFullTokenSpace(Token.DEFAULT_PREFIX_LENGTH, numShards);
+      CycleIterator<Node> nodeIt = new CycleIterator<Node>(nodes, nodes.iterator());
+      
+      //put all common shards, assign nodes to them in round robin way
+      for (Token tk: commonShards){
+          shards.put(tk, nodeIt.next());
+      }
+      
+      //for each exception, DO THE RIGHT THING
+      for (Vertex v: exceptions){          
+          //pick which nodes to cycle through and get iterator for them
+          List<Node> nodesForVertex = new ArrayList<Node>(numNodesPerException);
+          for (int i = 0; i < numNodesPerException; i++){
+              nodesForVertex.add(nodeIt.next());
+          }
+          
+          CycleIterator<Node> localRoundRobin = new CycleIterator<Node>(nodesForVertex, nodesForVertex.iterator());
+          
+          //includes an extra shard at the start to make sure a particular node is all by itself
+          //TODO: make the lower end be one less than at xxxxxx00000
+          //TODO: am i starting the other shards at 0000,0000
+          Token prefix = hashfun.hashVertex(v);
+           
+          List<Token> vertexShards = Token.splitNodeImpliedRange(prefix, TwoTierHashSharding.DEFAULT_EXCEPTION_TIER_SPLIT);
+          
+          for (Token tk: vertexShards){
+              shards.put(tk, localRoundRobin.next());
+          }          
+      }   
+  }
+  
   
   //for test purposes TODO: remove this/make private, somehow
   public TwoTierHashSharding(List<Pair<Token, Node>> shardState){
@@ -146,7 +182,7 @@ public class TwoTierHashSharding implements ISharding
   // elements end. 
   public static class CycleIterator<K> implements Iterator<K>{
       
-      private Set<K> col;
+      private Iterable<K> col;
       private Iterator<K> it = null;
       private boolean wrapped = false;
       
@@ -159,7 +195,7 @@ public class TwoTierHashSharding implements ISharding
       
       //assumes the iteration order of the set is consistent with the given iterator,
       //and consistent for the given set every time it is called
-      public CycleIterator(Set<K> col, Iterator<K> startingPosition){
+      public CycleIterator(Iterable<K> col, Iterator<K> startingPosition){
           this.col = col;
           it = startingPosition;
       }
@@ -167,7 +203,7 @@ public class TwoTierHashSharding implements ISharding
       //it always has next unless empty.
       @Override
       public boolean hasNext(){
-          return col == null | col.size() > 0;
+          return !(col == null || !col.iterator().hasNext());
       }
       
       @Override
@@ -283,106 +319,28 @@ public class TwoTierHashSharding implements ISharding
   }
 
   private void demoteVertex(Vertex v){
-      //update clutch
+      //update clutch: remove assignments
       //wait on clutch state update
-      //update local
+      //update local: remove shards from list. 
+      //don't need this for static version
   }
   
   
   private void promoteVertex(Vertex v){
-      
+      //TODO: later
       //update clutch if possible
       //wait on clutch assignment states update
-      //update local to reflect those changes
-           
-    //List<Pair<Token, Node>> newShards = hashfun.hashPartition(, v); 
-    
-    //TODO: this should not be a simple add, but an add
-    //to a some kind of sorted Data structure.
-    //now set the map from shards
-//Set<Node> lowNodes = new HashSet<Node>();
-//Set<Node> highNodes = new HashSet<Node>();
-//state.setReplicaSet(low, lowNodes);
-//state.setReplicaSet(high, highNodes);
+      //update local to reflect those changes    
   }
   
   private void internalPromoteVertex(Vertex v){
-      Pair<Token, Token> pt = hashfun.hash(v);
-      
       //option 1:
       // List<Token> parts = Token.split(pt.getLeft(), pt.getRight(), 2);      
+      //TODO: need to figure out way of promting in a way that
+      //keeps balance, so would like to know who else is in charge of a special node.
       //TODO: shards.put(tk, ??)  how to make it balanced? how to make it alright when new node added?
       
       //option 2: pick nodes, hash, use pair (hash(node_i), nodei)
-      //v 
-      //
   }
-
-  public static class HierarchicalHashFunction implements IHashFunction {
-  //by hierarchical we mean there are two levels to it (one per vertex)
-  //basically the token for (edge(v1,v2)) is  (hash(v1),hash(v2))
-  //this way, all edges for a given node are in a contiguous token range,
-  //and I can use the same representation for all kinds of shards
-
-   private static MessageDigest hashfun;
-
-   static {
-     try {
-      hashfun = MessageDigest.getInstance("MD5");
-     } catch (NoSuchAlgorithmException e) {
-       throw new RuntimeException(e);
-     }
-   }
-
-  public Token hash(Edge e) {
-    byte[] left = hashfun.digest(e.getLeftEndpoint().toByteArray());
-    byte[] right = hashfun.digest(e.getRightEndpoint().toByteArray());
-    byte[] hashed = new byte[left.length + right.length];
-    System.arraycopy(left, 0, hashed, 0, left.length);
-    System.arraycopy(right, 0, hashed, left.length, right.length);
-
-    return new Token(hashed);
-  }
-
-  public Pair<Token, Token> hash(Vertex v) {
-    byte[] leftside = hashfun.digest(v.toByteArray());
-
-    byte[] upperend = Arrays.copyOf(leftside, leftside.length*2);  
-    Arrays.fill(upperend, leftside.length, upperend.length, (byte)0xff);
-    
-    byte[] lowerend = Arrays.copyOf (leftside, leftside.length*2);
-    Arrays.fill(lowerend, leftside.length, lowerend.length, (byte)0);
- 
-    
-    return new Pair<Token,Token>(new Token(lowerend), new Token(upperend));
-  }
-
-  @Override
-  public Token hash(Node n)
-  {
-      byte[] left = hashfun.digest(n.toByteArray());
-      byte[] ans = Arrays.copyOf(left, 2*left.length);
-      Arrays.fill(ans, left.length, ans.length, (byte)0xff);
-      return new Token(ans);
-  }
-
-  @Override
-  public List<Pair<Token, Node>> hashPartition(List<Node> nodes, Vertex v)
-  {
-      byte[] left = hashfun.digest(v.toByteArray());
-      
-      List<Pair<Token,Node>> results = new LinkedList<Pair<Token,Node>>();
-      for (Node n: nodes){
-          byte[] ringPos = Arrays.copyOf(left, 2*left.length);
-          byte[] hash = hashfun.digest(n.toByteArray());
-          System.arraycopy(hash, 0, ringPos, left.length, ringPos.length);          
-          
-          results.add(new Pair<Token, Node>(new Token(ringPos), n));
-      }
-            
-      return results;      
-  }
-  
-}
   
 }
