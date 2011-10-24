@@ -61,8 +61,11 @@ public class TwoTierHashSharding implements ISharding
           shards.put(tk, nodeIt.next());
       }
       
-      //for each exception, DO THE RIGHT THING
+      //for each exception, DO THE RIGHT THING: 
+      //insert a 0th shard to take care of the previous node's edges.
+      //then insert shards partitioning its range
       for (Vertex v: exceptions){          
+          Node start = nodeIt.next();
           //pick which nodes to cycle through and get iterator for them
           List<Node> nodesForVertex = new ArrayList<Node>(numNodesPerException);
           for (int i = 0; i < numNodesPerException; i++){
@@ -71,15 +74,14 @@ public class TwoTierHashSharding implements ISharding
           
           CycleIterator<Node> localRoundRobin = new CycleIterator<Node>(nodesForVertex, nodesForVertex.iterator());
           
-          //includes an extra shard at the start to make sure a particular node is all by itself
-          //TODO: make the lower end be one less than at xxxxxx00000
-          //TODO: am i starting the other shards at 0000,0000
           Token prefix = hashfun.hashVertex(v);
-           
+          Pair<Token,Token> ends = hashfun.hash(v);
+          Token predecessor = ends.getLeft();
           List<Token> vertexShards = Token.splitNodeImpliedRange(prefix, TwoTierHashSharding.DEFAULT_EXCEPTION_TIER_SPLIT);
           
+          shards.put(predecessor, start);
           for (Token tk: vertexShards){
-              shards.put(tk, localRoundRobin.next());
+               shards.put(tk, localRoundRobin.next());
           }          
       }   
   }

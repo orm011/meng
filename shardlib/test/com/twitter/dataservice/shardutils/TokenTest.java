@@ -247,4 +247,14 @@ public class TokenTest
         List<Token> ans5 = Token.splitPrefixImpliedRange(new byte[]{(byte) 0x11}, 3, 1, 4);
         assertTokenArrayEquals(expected5, ans5);
     }
+    
+    @Test
+    public void predecessorTest(){
+        Token test1 = new Token(makeArr(0x00));
+        Assert.assertEquals(new Token(makeArr(0xff)), test1.predecessor());
+        
+        Token test2 = new Token(makeArr(0x11, 0x00));
+        Assert.assertEquals(new Token(makeArr(0x10, 0xff)), test2.predecessor());
+        
+    }
 }

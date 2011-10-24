@@ -13,7 +13,7 @@ echo $! >> $PIDFILE
 PIDS="$! $PIDS"
 cd ../
 
-NODES="node1 node2 node3 node4"
+NODES="node0 node1 node2 node3 node4"
 SECURITYPOLICY="-Djava.security.policy=server.policy"
 CP="-cp ./bin/"
 CLASS="com.twitter.dataservice.simulated.DataNode"

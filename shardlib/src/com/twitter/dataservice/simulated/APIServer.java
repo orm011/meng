@@ -3,6 +3,8 @@ package com.twitter.dataservice.simulated;
 import com.twitter.dataservice.remotes.RemoteDataNode;
 import com.twitter.dataservice.sharding.IShardLib;
 import com.twitter.dataservice.sharding.RoundRobinShardLib;
+import com.twitter.dataservice.sharding.ShardLib;
+import com.twitter.dataservice.sharding.TwoTierHashSharding;
 import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Node;
 import com.twitter.dataservice.shardutils.Vertex;
@@ -35,7 +37,8 @@ public class APIServer
                 nodes.put(local, remote);
             }
 
-            shardinglib  = new RoundRobinShardLib(nodes.size());
+            shardinglib = new ShardLib(new TwoTierHashSharding(new ArrayList<Vertex>(), new ArrayList<Node>(nodes.keySet()), 5, 0, 0), null);
+            //shardinglib  = new RoundRobinShardLib(nodes.size());
         } catch (RemoteException e) {
             System.out.println("failed to find remote node: " + e.getMessage());
         } catch (NotBoundException e) {
@@ -67,6 +70,7 @@ public class APIServer
       try{
         //TODO: make calls parallel
         for (Node n : destinations){
+            System.out.println(n);
           ans.add(nodes.get(n).getNeighbors(v.getWorkFactor() / destinations.size()));
         }
         

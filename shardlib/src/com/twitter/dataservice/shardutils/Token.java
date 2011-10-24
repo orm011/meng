@@ -20,6 +20,17 @@ public class Token implements Comparable<Token>
     this.size = bytes.length;
   }
   
+  public Token predecessor(){      
+      Token answer;
+      if (position.equals(BigInteger.ZERO)){
+          answer = new Token(getEffArray(size));
+      } else {
+          answer = new Token(position.subtract(BigInteger.ONE), size);
+      }
+      
+      return answer;
+  }
+  
   public byte[] byteRep(){
       byte[] rep = new byte[size];
       byte[] fromBigInt = position.toByteArray();
@@ -72,7 +83,7 @@ public class Token implements Comparable<Token>
       return this.position.compareTo(other.position);
   }
   
-  private Token concat(Token right){
+  public Token concat(Token right){
       byte[] answer = new byte[this.byteRep().length + right.byteRep().length];
       
       System.arraycopy(this.byteRep(), 0, answer, 0, this.byteRep().length);
