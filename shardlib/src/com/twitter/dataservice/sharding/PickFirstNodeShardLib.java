@@ -11,14 +11,14 @@ import java.util.*;
 //this maps edges/vertices to nodes (to distinguish
 // it from a sharding, which maps edges/vertices to shards.
 //those can then be mapped to nodes.  don't use this.
-public class ShardLib implements IShardLib
+public class PickFirstNodeShardLib implements IShardLib
 {
     ISharding sharding;
  //   IShardPrimitives state;
 
     //my approaches would be implemented as
     //different 'ISharding'
-    public ShardLib(ISharding keyToShardStrategy, IShardPrimitives zkState){
+    public PickFirstNodeShardLib(ISharding keyToShardStrategy, IShardPrimitives zkState){
         sharding = keyToShardStrategy;
         //state = zkState;
     }

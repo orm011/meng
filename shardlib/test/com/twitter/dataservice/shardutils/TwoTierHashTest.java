@@ -14,6 +14,8 @@ import junit.framework.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.twitter.dataservice.sharding.CycleIterator;
+import com.twitter.dataservice.sharding.SlidingWindowCycleIterator;
 import com.twitter.dataservice.sharding.TwoTierHashSharding;
 
 public class TwoTierHashTest
@@ -78,7 +80,7 @@ public class TwoTierHashTest
         SortedSet<Token> sizeOneSet = new TreeSet<Token>(Arrays.asList(new Token[]{TOKENx0F}));
         Iterator<Token> szOneIter = sizeOneSet.iterator();
         szOneIter.next();
-        TwoTierHashSharding.CycleIterator<Token> single = new TwoTierHashSharding.CycleIterator<Token>(sizeOneSet, szOneIter);
+        CycleIterator<Token> single = new CycleIterator<Token>(sizeOneSet, szOneIter);
         Assert.assertTrue(sizeOneSet.size() == 1);
         
         Assert.assertTrue(!single.wrappedAround());
@@ -96,9 +98,9 @@ public class TwoTierHashTest
         Iterator<Token> usedIter = sizeTwoSet.iterator();
         usedIter.next();
         
-        TwoTierHashSharding.CycleIterator<Token> at = new TwoTierHashSharding.CycleIterator<Token>(sizeTwoSet, sizeTwoSet.iterator());
-        TwoTierHashSharding.CycleIterator<Token> et = new TwoTierHashSharding.CycleIterator<Token>(sizeTwoSet);
-        TwoTierHashSharding.CycleIterator<Token> it = new TwoTierHashSharding.CycleIterator<Token>(sizeTwoSet, usedIter);
+        CycleIterator<Token> at = new CycleIterator<Token>(sizeTwoSet, sizeTwoSet.iterator());
+        CycleIterator<Token> et = new CycleIterator<Token>(sizeTwoSet);
+        CycleIterator<Token> it = new CycleIterator<Token>(sizeTwoSet, usedIter);
         Assert.assertTrue(at.hasNext() && et.hasNext() && it.hasNext());
 
         Assert.assertTrue(sizeTwoSet.size() == 2);
@@ -117,13 +119,13 @@ public class TwoTierHashTest
     
     @Test
     public void windowIteratorTest(){
-        TwoTierHashSharding.CycleIterator<Token> cycle1 = new TwoTierHashSharding.CycleIterator<Token>(tokenset);
-        TwoTierHashSharding.CycleIterator<Token> cycle2 = new TwoTierHashSharding.CycleIterator<Token>(tokenset);
-        TwoTierHashSharding.CycleIterator<Token> cycle3 = new TwoTierHashSharding.CycleIterator<Token>(tokenset);
+        CycleIterator<Token> cycle1 = new CycleIterator<Token>(tokenset);
+        CycleIterator<Token> cycle2 = new CycleIterator<Token>(tokenset);
+        CycleIterator<Token> cycle3 = new CycleIterator<Token>(tokenset);
         
-        Iterator<List<Token>> windowcycle1 = new TwoTierHashSharding.SlidingWindowCycleIterator<Token>(cycle1, 1);       
-        Iterator<List<Token>> windowcycle2 = new TwoTierHashSharding.SlidingWindowCycleIterator<Token>(cycle2, 2); 
-        Iterator<List<Token>> windowcycle4 = new TwoTierHashSharding.SlidingWindowCycleIterator<Token>(cycle3, 4);
+        Iterator<List<Token>> windowcycle1 = new SlidingWindowCycleIterator<Token>(cycle1, 1);       
+        Iterator<List<Token>> windowcycle2 = new SlidingWindowCycleIterator<Token>(cycle2, 2); 
+        Iterator<List<Token>> windowcycle4 = new SlidingWindowCycleIterator<Token>(cycle3, 4);
         
         Assert.assertTrue(windowcycle1.hasNext() && windowcycle2.hasNext() && windowcycle4.hasNext());
 

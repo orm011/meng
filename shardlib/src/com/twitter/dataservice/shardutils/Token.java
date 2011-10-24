@@ -3,7 +3,6 @@ package com.twitter.dataservice.shardutils;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -72,11 +71,7 @@ public class Token implements Comparable<Token>
   public int hashCode() {
       byte[] bytes = position.toByteArray();
       return bytes != null ? Arrays.hashCode(bytes) : 0;
-  }
-  
-  private int byteAsPositiveInteger(byte b){
-      return ((int) b) & 0xff;
-  }
+  } 
   
   @Override
   public int compareTo(Token other){

@@ -21,9 +21,6 @@ public class Benchmark {
   
   //exponential
   static public int nextInt(){
-
-      
-      
       try
     {
         return zipfy.sample();

@@ -2,28 +2,16 @@ package com.twitter.dataservice.sharding;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Queue;
 import java.util.Set;
 import java.util.SortedMap;
-import java.util.SortedSet;
 import java.util.TreeMap;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.LinkedBlockingQueue;
 
-import com.twitter.dataservice.shardutils.Edge;
-import com.twitter.dataservice.shardutils.HierarchicalHashFunction;
-import com.twitter.dataservice.shardutils.Node;
-import com.twitter.dataservice.shardutils.Pair;
-import com.twitter.dataservice.shardutils.Shard;
-import com.twitter.dataservice.shardutils.Token;
-import com.twitter.dataservice.shardutils.Vertex;
+import com.twitter.dataservice.shardutils.*;
 
 //most basic sharding. edge goes to  a Token.
 public class TwoTierHashSharding implements ISharding
@@ -177,115 +165,6 @@ public class TwoTierHashSharding implements ISharding
       }
       
       return toReturn;
-  }
-  
-  //TODO: clean up by making a new tree class? and putting stuff there?
-  //iterates through elements normally but wraps around in the same order when 
-  // elements end. 
-  public static class CycleIterator<K> implements Iterator<K>{
-      
-      private Iterable<K> col;
-      private Iterator<K> it = null;
-      private boolean wrapped = false;
-      
-      public CycleIterator(Set<K> col){
-          if (col == null || col.size() == 0)
-              throw new IllegalArgumentException("no null or empty collections accepted");
-          this.col = col;
-          it = col.iterator();
-      }
-      
-      //assumes the iteration order of the set is consistent with the given iterator,
-      //and consistent for the given set every time it is called
-      public CycleIterator(Iterable<K> col, Iterator<K> startingPosition){
-          this.col = col;
-          it = startingPosition;
-      }
-      
-      //it always has next unless empty.
-      @Override
-      public boolean hasNext(){
-          return !(col == null || !col.iterator().hasNext());
-      }
-      
-      @Override
-      public K next() throws NoSuchElementException {
-          if (!this.hasNext()){
-                  throw new NoSuchElementException();              
-          }
-
-          if (wrapped = !it.hasNext())
-              it = col.iterator();
-              
-          K toReturn = it.next();
-          
-          return toReturn;
-      }
-      
-      public boolean wrappedAround(){
-          return this.wrapped;
-      }
-
-    @Override
-    public void remove()
-    {
-        it.remove();
-    }
-            
-  }
-  
-  //takes a CycleIterator, but at each step returns a window
-  public static class SlidingWindowCycleIterator<K> implements Iterator<List<K>>{
-  //Methods to write to the Shard state.
-      LinkedBlockingQueue<K> internalQueue;
-      CycleIterator<K> internalIterator;
-      int wSize;
-      
-      //window must have size > 0
-      public SlidingWindowCycleIterator(CycleIterator<K> ci, int windowSize){
-          if (windowSize <= 0)
-              throw new IllegalArgumentException("windowSize must be greater than 0");
-          
-          internalQueue = new LinkedBlockingQueue<K>(windowSize);
-          internalIterator = ci;
-          wSize = windowSize;
-          
-          //initialize current window. 
-          if (internalIterator.hasNext()){
-              for(int i = 0; i < wSize; i++)
-                  internalQueue.add(internalIterator.next());
-          }
-                    
-      }
-      
-      //assumes internal iterator is cyclic 
-      @Override
-      public boolean hasNext(){
-          return internalIterator != null && internalIterator.hasNext();
-      }
-      
-      //returns a list of elements in the order they appeared
-      @Override
-      public List<K> next() throws NoSuchElementException {
-          if (!hasNext()){
-              throw new NoSuchElementException();
-          }
-          
-
-          List<K> answer = new LinkedList<K>(internalQueue);
-         
-          //update internal state. it should not be empty
-          internalQueue.remove();
-          internalQueue.add(internalIterator.next());
-
-          return answer;
-      }
-
-    @Override
-    public void remove()
-    {
-        internalIterator.remove();
-    }
   }
   
   @Override public Collection<Edge> getEdgesWithinShard(Shard sh, Collection<Edge> edges) {

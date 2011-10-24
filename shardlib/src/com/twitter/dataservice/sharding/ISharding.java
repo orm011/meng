@@ -10,7 +10,7 @@ import java.util.Collection;
 import java.util.List;
 
 
-//this is for the virtual shard part. See IKeyToNode for the full path between
+//this is for the virtual shard part. See IShardLib for the full path between
 //having a vertex/edge and getting the right nodes to query
 public interface ISharding {
 
