@@ -86,6 +86,11 @@ There are other important families of queries I have not though as much about, s
 The goal here is to measure how much better or worse these perform, after fixing the number of machines, based on the empirical patterns found earlier in the design part.  Workloads could be derived from real operation data or hypothetical data with skews like done in the PNUTS paper. Reading from different papers how they benchmark things would help.
 \subsubsection{Proposal}
 
+There are three main types of operations we are interested in, one is querying for edge data getEdge(v,w), another one is for fanout getFanout(v), another for getIntersection(v,w) (there is a tentative random walk one that I am yet to even define, more on that after I get the basics done).  Besides these, there are also update operation but in my reduced version of the graph store, the only  update is putEdge(Edge e). 
+
+To benchmark the two-tier hash strategy 
+
+
 \begin{enumerate}
 \item Will want to see how the viability of the strategy (eg amount of state needed for lookup table) changes as the graph changes. Eg. in simulation vary the degree skew.
 \item Will want to vary the workload composition (Eg \% of fanouts, intersections)
@@ -97,6 +102,5 @@ in the case of a strategy where I need to crawl the graph offline, benchmark the
 Another way to compare methods is by comparing resources needed to achieve the same  performance requirements. (vs comparing the results achieved with the same resources).
 
 Finally, factors such as bottlenecks in the rest of the system may hinder observing the effects desired. I can modify the simulator to show that, but could affect other results.
-
 
 \end{document}
