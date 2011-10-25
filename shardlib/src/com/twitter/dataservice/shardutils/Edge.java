@@ -1,21 +1,25 @@
 package com.twitter.dataservice.shardutils;
 
 import java.io.ByteArrayOutputStream;
+import java.io.Serializable;
 
-public class Edge
+public class  Edge implements Serializable
 {
     Pair<Vertex, Vertex> ends;    
+    Vertex left;
+    Vertex right;
     
     public Edge(Vertex left, Vertex right){
-        ends = new Pair<Vertex, Vertex>(left, right);
+        this.left = left;
+        this.right = right;
     }    
     
     public Vertex getLeftEndpoint(){
-        return ends.getLeft();
+        return left;
     }
     
     public Vertex getRightEndpoint(){
-        return ends.getRight();
+        return right;
     }
     
     
@@ -30,6 +34,6 @@ public class Edge
     }
     
     public String toString(){
-        return "Edge: " + ends.getLeft().toString()  + " " + ends.getRight().toString();
+        return "Edge: (" + getLeftEndpoint().toString()  + ", " + getRightEndpoint().toString() + ")";
     }
 }

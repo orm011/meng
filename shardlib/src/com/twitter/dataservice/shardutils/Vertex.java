@@ -3,8 +3,9 @@ package com.twitter.dataservice.shardutils;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.Serializable;
 
-public class Vertex implements Hashable
+public class Vertex implements Hashable, Serializable
 {
     final int id;
 

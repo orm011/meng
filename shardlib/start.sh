@@ -8,7 +8,7 @@ fi
 
 #need to start rmiregistry in ./bin for some reason
 cd ./bin/
-rmiregistry &
+rmiregistry & >> $LOGSDIR/rmi.log
 echo $! >> $PIDFILE
 PIDS="$! $PIDS"
 cd ../
@@ -16,7 +16,7 @@ cd ../
 NODES="node0 node1 node2 node3 node4"
 SECURITYPOLICY="-Djava.security.policy=server.policy"
 CP="-cp ./bin/"
-CLASS="com.twitter.dataservice.simulated.DataNode"
+CLASS="com.twitter.dataservice.simulated.WorkNodeMain"
 
 #start each node
 for NODE in $NODES

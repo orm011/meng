@@ -1,6 +1,7 @@
 package com.twitter.dataservice.simulated;
 
-import com.twitter.dataservice.remotes.RemoteDataNode;
+import com.twitter.dataservice.remotes.ICompleteWorkNode;
+import com.twitter.dataservice.remotes.IUncheckedWorkDataNode;
 import com.twitter.dataservice.sharding.IShardLib;
 import com.twitter.dataservice.sharding.RoundRobinShardLib;
 import com.twitter.dataservice.sharding.PickFirstNodeShardLib;
@@ -9,6 +10,7 @@ import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Node;
 import com.twitter.dataservice.shardutils.Vertex;
 
+import java.io.ObjectOutputStream.PutField;
 import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
@@ -19,10 +21,9 @@ import java.util.concurrent.Executors;
 
 public class APIServer
 {
-
-    Map<Node, RemoteDataNode> nodes = new HashMap<Node, RemoteDataNode>();
+    //TODO: make it behave like an individual node? implement the same interface?
+    Map<Node, ICompleteWorkNode> nodes = new HashMap<Node, ICompleteWorkNode>();
     private IShardLib shardinglib = null; // see constructor
-    private ExecutorService internalExecutor = Executors.newCachedThreadPool();
 
     
     public APIServer(String[] dataNodeNames) {
@@ -30,7 +31,7 @@ public class APIServer
             for (String name: dataNodeNames){
                 System.out.printf("looking up node %s\n", name);
               
-                RemoteDataNode remote = (RemoteDataNode) Naming.lookup(name);
+                ICompleteWorkNode remote = (ICompleteWorkNode) Naming.lookup(name);
                 int id = Integer.parseInt(name.substring(name.split("[0-9]+", 0)[0].length(), name
                     .length()));
                 Node local = new Node(id);
@@ -49,33 +50,33 @@ public class APIServer
     }
 
 
-    public byte[] getEdge(Edge e){
+    public Edge getEdge(Vertex v, Vertex w){
         System.out.println("hello");
-        Node destination = shardinglib.getNode(e);
-        byte[] result = null;
+        Node destination = shardinglib.getNode(new Edge(v, w));
+        Edge result = null;
 
         try {
-          result = nodes.get(destination).getEdge();
+          result = nodes.get(destination).getEdge(new Vertex(1), new Vertex(2));
         } catch(RemoteException re){
           throw new RuntimeException(re);
         }
 
-        return result;
+        return result;        
     }
 
-    public List<byte[]> getAllEdges(Vertex v) {
+    public Collection<Vertex> getAllEdges(Vertex v) {
       Collection<Node> destinations = shardinglib.getNodes(v);
-      List<byte[]> ans = new LinkedList<byte[]>();
+      Collection<Vertex> ans = null;
 
       try{
         //TODO: make calls parallel
         for (Node n : destinations){
             System.out.println(n);
-          ans.add(nodes.get(n).getNeighbors(v.getWorkFactor() / destinations.size()));
+            ans = nodes.get(n).getFanOut(v);
         }
         
       } catch (RemoteException re){
-        throw new RuntimeException(re);
+          throw new RuntimeException(re);
       }
 
       return ans;
@@ -83,6 +84,14 @@ public class APIServer
     
     public static void main(String[] args){
         APIServer api = new APIServer(args);
-        new Benchmark(api).run();
+        System.out.println("about the request...");
+        Edge mark1 = api.getEdge(new Vertex(1), new Vertex(2));
+        System.out.println(mark1);
+        
+        Collection<Vertex> vertices = api.getAllEdges(new Vertex(1));
+        System.out.println(vertices);
+        
+        
+        //new Benchmark(api).run();
     }
 }

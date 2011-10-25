@@ -3,7 +3,7 @@ package com.twitter.dataservice.remotes;
 import java.rmi.Remote;
 
 //operations at node level
-public interface RemoteDataNode extends Remote
+public interface IUncheckedWorkDataNode extends Remote
 {
     byte[] getEdge() throws java.rmi.RemoteException;
 
