@@ -23,7 +23,9 @@
 
 
 There are three main types of operations expected of the graph store, or a graph store in general. One is querying for edge data {\code getEdge(v,w)}, another one is for fan-out {\code getFanout(v)}, another for intersections of the neighbrohoods of two nodes {\code getIntersection(v,w)}. There is also a tentative random walk one that I am yet to actually look into.  A real workload is made of a mix of these queries, but  I am thinking of  partitioning strategies by starting with one of the operations and thinking backward to something that would improve their performance. For that reason, the benchmarks I have in mind are: 100\% \edgeq, 100\% \fanoutq, 100\% \intersectq and a mix
-with realistic twitter proportions. \todonote[fancyline]{put workload numbers from wiki here}. \todonote{think about performance effects of doing these reads while there are updates happening}
+with realistic twitter proportions. \todonote[fancyline]{put workload numbers from wiki here}. 
+
+
 
 The thoughts on strategies are here:
 
@@ -40,7 +42,7 @@ This thesis presents three sections. The first is the design of strategies based
 
 \draftnote{right now I want to focus on getting infrastructure/benchmarks done for the \fanoutq and \intersectq before looking at the other stuff. This week I am trying to get to run a simulated workload good enough to make meaningful graphs about \fanoutq from it and write them up in this document. You can check what I have done so far on that front in my repo, or on the review}
 
-
+\todonote{think about performance effects of doing these reads while there are updates happening}
 \draftnote{Don't read the rest, its taken from the wiki, and its more of a text dump}
 
 \section{Underview, don't read}
