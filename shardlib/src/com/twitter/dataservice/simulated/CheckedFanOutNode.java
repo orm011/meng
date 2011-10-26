@@ -8,6 +8,9 @@ import com.twitter.dataservice.remotes.ICheckedFanOutNode;
 import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Vertex;
 
+
+//TODO: think more about whether I want anything like this, meanwhile
+// can use the CompleteWorkNode class
 public class CheckedFanOutNode implements ICheckedFanOutNode
 {
     Map<Vertex, Integer> internalCheckMap = new HashMap<Vertex, Integer>();

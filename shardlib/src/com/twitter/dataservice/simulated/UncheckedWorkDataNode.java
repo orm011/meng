@@ -9,20 +9,19 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+//used to test RMI. not being used now.
 public class UncheckedWorkDataNode extends UnicastRemoteObject implements IUncheckedWorkDataNode 
 {
     String name;
-    //has a: executor for incoming workTasks
-    ExecutorService workExecutor;
     
     public UncheckedWorkDataNode(int numWorkers, String name) throws RemoteException {
         this.name = name;
-        workExecutor = Executors.newFixedThreadPool(numWorkers);
     }
 
     public byte[] getEdge() throws RemoteException
     {
-        workExecutor.execute(new WorkTask(1));
+        try {Thread.sleep(100); } catch (InterruptedException e) {System.out.println("sleep problem");}
+        System.out.println(this.name + " done");
         return new byte[]{0};
     }
 
@@ -30,15 +29,14 @@ public class UncheckedWorkDataNode extends UnicastRemoteObject implements IUnche
             throws RemoteException
     {
         //TODO: make the byte array larger
-        workExecutor.execute(new WorkTask(workFactorLeft*workFactorRight));
         return new byte[]{0};
     }
 
     public byte[] getNeighbors(Integer workFactor) throws RemoteException
     {
-      workExecutor.execute(new WorkTask(workFactor));
-      System.out.println("executing order...");
-      return new byte[]{0};
+        try {Thread.sleep(100);} catch (InterruptedException e) { System.out.println("sleep problem");}
+        System.out.println(this.name + "executing order...");
+        return new byte[]{0};
     }
     
 

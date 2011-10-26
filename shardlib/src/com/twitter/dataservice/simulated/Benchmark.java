@@ -11,6 +11,8 @@ import com.twitter.dataservice.shardutils.Vertex;
 public class Benchmark {
 
   APIServer api;
+  
+  //
   static ExponentialDistributionImpl expy = new ExponentialDistributionImpl(2);
   static ZipfDistributionImpl zipfy = new ZipfDistributionImpl(100, 1.5);
 
@@ -19,7 +21,7 @@ public class Benchmark {
   }
 
   
-  //exponential
+  // method is temporary, only for experiments while I get used to the library.
   static public int nextInt(){
       try
     {
@@ -34,8 +36,18 @@ public class Benchmark {
   
   
   public void run() {
+      //would generate graph, put into nodes
+//      Object graph;
+//     
+//      while (graph.edges.hasNext()){
+//          api.putEdge(graph.edges.next());//
+//      }
+//
+//      for (Object query: benchmarkIterator)
+//              query.getCalled(api);
+//      
 
-
+            
      Vertex[] vertices = {new Vertex(0, 1), new Vertex(1, 1), new Vertex(2, 10), new Vertex(3, 10)};
 
      for (Vertex v: vertices){

@@ -21,7 +21,7 @@ import java.util.concurrent.Executors;
 
 public class APIServer
 {
-    //TODO: make it behave like an individual node? implement the same interface?
+    //TODO: make it api have interface like an individual node?;
     Map<Node, ICompleteWorkNode> nodes = new HashMap<Node, ICompleteWorkNode>();
     private IShardLib shardinglib = null; // see constructor
 
@@ -81,6 +81,12 @@ public class APIServer
 
       return ans;
     }
+
+    public void putEdge(Edge e){
+        //TODO.
+        //figure out node
+        //call put and all
+    }
     
     public static void main(String[] args){
         APIServer api = new APIServer(args);
@@ -90,7 +96,6 @@ public class APIServer
         
         Collection<Vertex> vertices = api.getAllEdges(new Vertex(1));
         System.out.println(vertices);
-        
         
         //new Benchmark(api).run();
     }

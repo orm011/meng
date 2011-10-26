@@ -14,7 +14,7 @@ import com.twitter.dataservice.shardutils.Vertex;
 
 public class CompleteWorkNode  extends UnicastRemoteObject implements ICompleteWorkNode
 {   
-
+    //TODO: will need to keep a dictionary or so to store data
     protected CompleteWorkNode() throws RemoteException
     {
         super();

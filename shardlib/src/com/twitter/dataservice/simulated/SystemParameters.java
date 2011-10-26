@@ -2,6 +2,7 @@ package com.twitter.dataservice.simulated;
 
 public class SystemParameters
 {
+    //TODO: will need to add stuff i want to modify in benchmark here
     //size in bytes for an edge
     public static double edgeMetadataSize = 100;
     
