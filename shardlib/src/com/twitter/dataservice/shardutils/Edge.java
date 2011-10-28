@@ -3,11 +3,14 @@ package com.twitter.dataservice.shardutils;
 import java.io.ByteArrayOutputStream;
 import java.io.Serializable;
 
+import com.twitter.dataservice.simulated.SystemParameters;
+
 public class  Edge implements Serializable
 {
     Pair<Vertex, Vertex> ends;    
     Vertex left;
     Vertex right;
+    byte[] payload = new byte[SystemParameters.edgespace];
     
     public Edge(Vertex left, Vertex right){
         this.left = left;

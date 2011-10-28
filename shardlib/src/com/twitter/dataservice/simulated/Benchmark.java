@@ -1,39 +1,25 @@
 package com.twitter.dataservice.simulated;
 
+import java.nio.channels.UnsupportedAddressTypeException;
 import java.util.Random;
 
-import org.apache.commons.math.MathException;
 import org.apache.commons.math.distribution.ExponentialDistributionImpl;
+import org.apache.commons.math.distribution.ZipfDistribution;
 import org.apache.commons.math.distribution.ZipfDistributionImpl;
 
 import com.twitter.dataservice.shardutils.Vertex;
 
-public class Benchmark {
+class Benchmark {
 
   APIServer api;
   
   //
   static ExponentialDistributionImpl expy = new ExponentialDistributionImpl(2);
-  static ZipfDistributionImpl zipfy = new ZipfDistributionImpl(100, 1.5);
+  static ZipfDistributionImpl zipfy = new ZipfDistributionImpl(1, 1.5);
 
   public Benchmark(APIServer api) {
     this.api = api;
-  }
-
-  
-  // method is temporary, only for experiments while I get used to the library.
-  static public int nextInt(){
-      try
-    {
-        return zipfy.sample();
-    } catch (MathException e)
-    {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
-        return 0;
-    }
-  }
-  
+  } 
   
   public void run() {
       //would generate graph, put into nodes

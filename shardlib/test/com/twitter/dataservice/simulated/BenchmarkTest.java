@@ -1,5 +1,6 @@
 package com.twitter.dataservice.simulated;
 
+import org.apache.commons.math.distribution.ZipfDistributionImpl;
 import org.junit.Test;
 
 
@@ -10,8 +11,15 @@ public class BenchmarkTest
     //distribution look like. (Not a real test)
     @Test 
     public void numberGeneration(){
-        for (int i = 0; i < 1000; i++){
-            System.out.println(Benchmark.nextInt());
+        ZipfDistributionImpl myimp = new ZipfDistributionImpl(2,1);
+        ZipfDistributionImpl myimp2 = new ZipfDistributionImpl(1,1);
+        for (int i = 0; i < 50; i++){
+            System.out.println(myimp.probability(i));
+        }
+        
+        System.out.println("-----------");
+        for (int i = 0; i < 50; ++i){
+            System.out.println(myimp2.probability(i));
         }
     }
 }
