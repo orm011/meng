@@ -25,9 +25,23 @@ public class APIServer
     Map<Node, ICompleteWorkNode> nodes = new HashMap<Node, ICompleteWorkNode>();
     private IShardLib shardinglib = null; // see constructor
 
+    //everything runs in one process
+    public static APIServer apiWithGivenWorkNodes(List<? extends ICompleteWorkNode> givenNodes){
+        Map<Node, ICompleteWorkNode> nodes = new HashMap<Node, ICompleteWorkNode>(givenNodes.size());
+        
+        for (int i = 0; i < givenNodes.size(); i++){
+                nodes.put(new Node(i), givenNodes.get(i));
+        }
+        
+        return new APIServer(nodes);
+    }
     
-    public APIServer(String[] dataNodeNames) {
-        try {
+    //using RMI for multiple processes, assumes the other processes have been started
+    //and have registered
+    public static APIServer apiWithRemoteWorkNodes(String[] dataNodeNames){
+        Map<Node, ICompleteWorkNode> nodes = new HashMap<Node, ICompleteWorkNode>(dataNodeNames.length);
+        
+        try {            
             for (String name: dataNodeNames){
                 System.out.printf("looking up node %s\n", name);
               
@@ -36,22 +50,24 @@ public class APIServer
                     .length()));
                 Node local = new Node(id);
                 nodes.put(local, remote);
-            }
-
-            shardinglib = new PickFirstNodeShardLib(new TwoTierHashSharding(new ArrayList<Vertex>(), new ArrayList<Node>(nodes.keySet()), 5, 0, 0), null);
-            //shardinglib  = new RoundRobinShardLib(nodes.size());
-        } catch (RemoteException e) {
-            System.out.println("failed to find remote node: " + e.getMessage());
-        } catch (NotBoundException e) {
-            e.printStackTrace();
+            }            
+        } catch (RemoteException e){
+            throw new RuntimeException(e);
+        } catch (NotBoundException e){
+            throw new RuntimeException(e);
         } catch (MalformedURLException e){
-            e.printStackTrace();
-        }
+            throw new RuntimeException(e);
+        } 
+        
+        return new APIServer(nodes);
     }
 
+    private APIServer(Map<Node, ICompleteWorkNode> nodes){
+        this.nodes = nodes;
+        shardinglib = new PickFirstNodeShardLib(new TwoTierHashSharding(new ArrayList<Vertex>(), new ArrayList<Node>(nodes.keySet()), 5, 0, 0), null);        
+    }
 
     public Edge getEdge(Vertex v, Vertex w){
-        System.out.println("hello");
         Node destination = shardinglib.getNode(new Edge(v, w));
         Edge result = null;
 
@@ -71,7 +87,6 @@ public class APIServer
       try{
         //TODO: make calls parallel
         for (Node n : destinations){
-            System.out.println(n);
             ans = nodes.get(n).getFanOut(v);
         }
         
@@ -83,20 +98,22 @@ public class APIServer
     }
 
     public void putEdge(Edge e){
-        //TODO.
-        //figure out node
-        //call put and all
+        Node n = shardinglib.getNode(e);
+        
+        try {
+            nodes.get(n).putEdge(e);
+        } catch (RemoteException re){
+            throw new RuntimeException(re);
+        }
     }
     
     public static void main(String[] args){
-        APIServer api = new APIServer(args);
-        System.out.println("about the request...");
+        APIServer api = APIServer.apiWithRemoteWorkNodes(args);
+        System.out.println("about to request...");
         Edge mark1 = api.getEdge(new Vertex(1), new Vertex(2));
         System.out.println(mark1);
         
         Collection<Vertex> vertices = api.getAllEdges(new Vertex(1));
         System.out.println(vertices);
-        
-        //new Benchmark(api).run();
     }
 }

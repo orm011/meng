@@ -1,44 +1,40 @@
 package com.twitter.dataservice.simulated;
 
-import java.nio.channels.UnsupportedAddressTypeException;
+import java.util.Iterator;
 import java.util.Random;
 
 import org.apache.commons.math.distribution.ExponentialDistributionImpl;
 import org.apache.commons.math.distribution.ZipfDistribution;
 import org.apache.commons.math.distribution.ZipfDistributionImpl;
 
+import com.jrefinery.chart.demo.JFreeChartDemo;
+import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Vertex;
+import com.twitter.dataservice.simulated.BenchmarkData.Query;
+import com.twitter.dataservice.simulated.BenchmarkData.WorkloadParams;
 
-class Benchmark {
+public class Benchmark {
 
-  APIServer api;
-  
-  //
-  static ExponentialDistributionImpl expy = new ExponentialDistributionImpl(2);
-  static ZipfDistributionImpl zipfy = new ZipfDistributionImpl(1, 1.5);
+  public static void main(String[] args) {
+      APIServer api = APIServer.apiWithRemoteWorkNodes(args);
+      SkewedDegreeGraph graph = new SkewedDegreeGraph(10, 1, 1);
+      //load
+      Iterator<Edge> it = graph.graphIterator();
+      while (it.hasNext()){
+          api.putEdge(it.next());
+      }
+      
+      System.out.println("done creating graph");
 
-  public Benchmark(APIServer api) {
-    this.api = api;
-  } 
-  
-  public void run() {
-      //would generate graph, put into nodes
-//      Object graph;
-//     
-//      while (graph.edges.hasNext()){
-//          api.putEdge(graph.edges.next());//
-//      }
-//
-//      for (Object query: benchmarkIterator)
-//              query.getCalled(api);
-//      
-
-            
-     Vertex[] vertices = {new Vertex(0, 1), new Vertex(1, 1), new Vertex(2, 10), new Vertex(3, 10)};
-
-     for (Vertex v: vertices){
-       System.out.println(v.toString());
-       api.getAllEdges(v);
-     }
+      //query
+      WorkloadParams params = (new WorkloadParams.Builder())
+      .numberOfQueries(10)
+      .percentEdge(100)
+      .percentVertex(0)  
+      .skew(0.01)
+      .build();
+      
+      Iterator<Query> ot = graph.workloadIterator(params);
+      while (ot.hasNext()) ot.next().execute(api);
   }
 }

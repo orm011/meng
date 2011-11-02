@@ -15,7 +15,7 @@ cd ../
 
 NODES="node0 node1 node2 node3 node4"
 SECURITYPOLICY="-Djava.security.policy=server.policy"
-CP="-cp ./bin/"
+CP="-cp ./bin/:./lib/commons-math-2.2/commons-math-2.2.jar"
 CLASS="com.twitter.dataservice.simulated.WorkNodeMain"
 
 #start each node
@@ -42,8 +42,8 @@ do
 done
 echo "done binding."
 
-CODEBASEFLAG="-Djava.rmi.server.codebase=file://remotes.jar"
-APISERVERCLASS="com.twitter.dataservice.simulated.APIServer"
+CODEBASEFLAG="-Djava.rmi.server.codebase=file://bin/remotes.jar"
+APISERVERCLASS="com.twitter.dataservice.simulated.Benchmark"
 java $CP $CODEBASEFLAG $SECURITYPOLICY $APISERVERCLASS $NODES 2>&1 >> $LOGSDIR/apiserver.log &
 echo $! >> $PIDFILE
 wait $!

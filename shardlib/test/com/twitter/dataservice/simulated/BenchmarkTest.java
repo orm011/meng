@@ -1,7 +1,21 @@
 package com.twitter.dataservice.simulated;
 
+
+import java.awt.Container;
+
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+
 import org.apache.commons.math.distribution.ZipfDistributionImpl;
 import org.junit.Test;
+
+import com.jrefinery.chart.CategoryDataSource;
+import com.jrefinery.chart.DefaultCategoryDataSource;
+import com.jrefinery.chart.JFreeChart;
+import com.jrefinery.chart.JFreeChartPanel;
+import com.jrefinery.chart.demo.JFreeChartDemo;
+import com.jrefinery.chart.event.DataSourceChangeListener;
+import com.jrefinery.util.ui.Swing;
 
 
 public class BenchmarkTest
@@ -9,17 +23,7 @@ public class BenchmarkTest
     
     //this collects a bunch of numbers, which I can plot and check what the
     //distribution look like. (Not a real test)
-    @Test 
-    public void numberGeneration(){
-        ZipfDistributionImpl myimp = new ZipfDistributionImpl(2,1);
-        ZipfDistributionImpl myimp2 = new ZipfDistributionImpl(1,1);
-        for (int i = 0; i < 50; i++){
-            System.out.println(myimp.probability(i));
-        }
-        
-        System.out.println("-----------");
-        for (int i = 0; i < 50; ++i){
-            System.out.println(myimp2.probability(i));
-        }
+    @Test public void foo(){
+ 
     }
 }
