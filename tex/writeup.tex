@@ -19,6 +19,7 @@
 \newcommand{\intersectq}{{\code getIntersection()}}
 \newcommand{\randomwalk}{{\code randomWalk()}}
 
+
 \section{Overview}
 
 
@@ -46,6 +47,26 @@ This thesis presents three sections. The first is the design of three strategies
 \draftnote{Don't read the rest, its taken from the wiki, and its more of a text dump}
 
 \draftnote{relation between keeping this type of lookup table and caching. conceptually, both depend on there being a non-uniform access pattern that we can exploit to improve performance. Also think about how a cache keeps up to date}
+
+
+\section{background and reading}
+
+(paper of Newman and Park) Why social networks differ from other types of networks:
+bascially two ways: positive degree correlation between neighbors is one feature, and higher than random clustering is the other.
+In a social network, if a node has high degree then its neighbors are more likely to also have  high degree. 
+(I wonder how this applies to 'asymetric' implication for Twitter, for example, 
+
+is it that if a node has a lot of followers then it is likely to follow people with lots of followers?
+or is it that if a node has lots of followers then it is likely following nodes with lots of followers?
+recall, the follows graph is not symmetric but it is very heavily so. apparently. (Stu mentioned this).
+ 
+In a social network, if A is connected to B and B to C, then it is likely A is connected to C. one explanation is
+that people actively try to add the missing edges.  In Twitter, if A follows B and B follows C, recommendations are mde
+so that A follows C. and if A follows B and A visits C, it is mentioned that B follows C, so that again the link A-C is encouraged.
+
+
+
+
 \section{Underview, don't read}
 \begin{enumerate}
 \item design: I've fleshed out one alternative sharding function, and have a second one brewing. I want another method besides those. 
@@ -135,6 +156,8 @@ To benchmark the two-tier hash strategy
 \item Will want to quantify cost of having to move data around every now and then (since you need this when you don't hash)
 in the case of a strategy where I need to crawl the graph offline, benchmark the process itself.
 \end{enumerate}
+
+
 
 Another way to compare methods is by comparing resources needed to achieve the same  performance requirements. (vs comparing the results achieved with the same resources).
 
