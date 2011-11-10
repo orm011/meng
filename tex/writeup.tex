@@ -15,13 +15,13 @@
 %todo: figure out way of placing arguments to those ops (see the if then else thing)
 %todo: figure out way to make text wider
 \newcommand{\edgeq}{{\code getEdge()}}
-\newcommand{\fanoutq}{{\code getFanout()}}
+\newcommand{\fanoutq}[1][]{{\code getFanout(}~#1~{\code )}}
 \newcommand{\intersectq}{{\code getIntersection()}}
 \newcommand{\randomwalk}{{\code randomWalk()}}
 
+\bibliographystyle{alpha}
 
 \section{Overview}
-
 
 There are three main types of operations expected of the graph store, or a graph store in general. One is querying for edge data {\code getEdge(v,w)}, another one is for fan-out {\code getFanout(v)}, another for intersections of the neighbrohoods of two nodes {\code getIntersection(v,w)}. There is also a tentative random walk one that I am yet to actually look into.  A real workload is made of a mix of these queries, but  I am thinking of  partitioning strategies by starting with one of the operations and thinking backward to something that would improve their performance. For that reason, the benchmarks I have in mind are: 100\% \edgeq, 100\% \fanoutq, 100\% \intersectq and a mix
 with realistic twitter proportions. \todonote[fancyline]{put workload numbers from wiki here}. 
@@ -65,7 +65,23 @@ that people actively try to add the missing edges.  In Twitter, if A follows B a
 so that A follows C. and if A follows B and A visits C, it is mentioned that B follows C, so that again the link A-C is encouraged.
 
 
+\section{Benchmark design}
+%some sources: \cite{Gray.Benchmark}, \cite{ycsb}, \cite{zipf-systems}
 
+It is expected that splitting a heavy node \( A \)  decreases latency for a \fanoutq[ A ] query, due to its parallel execution.  But it is also clear the amount of work and resources to use remain at about the same (or worse, given the extra communication).  Such a system, when compared to a different one that keeps all edges \( \left(A, * \right) \) in the same storage node  will nontheless perform with higher throughput under a load of repeated \fanoutq[A] calls, since it is a single node processing all of them.  On the other hand, on under a load of \fanoutq{*} queries where the argument varies uniformly over different nodes $A$, $B$, ... The more evenly this happens, the more uniform the load is spread. Hence, under this workload the throughput would be very similar for both systems.    
+
+\draftnote{I could/should  write an explitic model for these simple scenarios, it would make it clearer and improve this from its current prose}
+
+So here are four extremes:
+
+A single vertex has all edges and  all queries go for it (actually they must):
+
+Many vertices, all queries go to one:
+
+Many vertices, a really heavy one, but queries go to all:
+
+Even degree vertices, evenly spread queries:
+-max possible throughput.
 
 \section{Underview, don't read}
 \begin{enumerate}
@@ -157,9 +173,10 @@ To benchmark the two-tier hash strategy
 in the case of a strategy where I need to crawl the graph offline, benchmark the process itself.
 \end{enumerate}
 
-
-
 Another way to compare methods is by comparing resources needed to achieve the same  performance requirements. (vs comparing the results achieved with the same resources).
 
 Finally, factors such as bottlenecks in the rest of the system may hinder observing the effects desired. I can modify the simulator to show that, but could affect other results.
+\nocite{*}
+\bibliography{bib/more}
+
 \end{document}
