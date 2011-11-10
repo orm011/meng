@@ -39,7 +39,7 @@ public interface BenchmarkData
             
             @Override
             public void execute(APIServer api){
-                api.getAllEdges(v);
+                api.getFanout(v);
             }
         }
         

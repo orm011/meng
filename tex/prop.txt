@@ -172,6 +172,29 @@ Some ideas:
 
 -papers:
 	-fine grained partitioning used graph to try to approximate workload, but directly using workload is better.
+
+Meeting Nov. 2 or 3:
+	status:
+		-spent last month implementing an environment to simulate components and measure
+		-scope: mostly measure latencies of workloads for 2 different schemes.
+		-this week, getting to some graphs based on generated data.  
+		      -this influenced my decision: an effort to 
+
+		-real system integration (probably longer term). 
+		-using real data. no problem.
+
+		
+	-System: describe. 
+	-Fanout: about to get plot on generated data. using differnt skews.
+	-Intersection idea: describe.
+		      -using log
+		      -using the partitioning software (from Carlo)
+
+	-timeline:
+		-this week some plots, send them over.
+		-next week run graph partitioning sft.  (ask carlo. generated data to start with)
+		
+-more notes on notebook
 ------------------------------------------------
 RvP mentioned:
     -look into app graph, look into popularity policy (push vs pull), and 

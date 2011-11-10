@@ -10,7 +10,7 @@ import java.util.List;
 
 //one of the most basic types of hashing
 //hash by left vertex on id
-public class RoundRobinShardLib implements IShardLib
+public class RoundRobinShardLib implements INodeSelectionStrategy
 {
 
     private int numNodes;

@@ -11,7 +11,7 @@ import java.util.*;
 //this maps edges/vertices to nodes (to distinguish
 // it from a sharding, which maps edges/vertices to shards.
 //those can then be mapped to nodes.  don't use this.
-public class PickFirstNodeShardLib implements IShardLib
+public class PickFirstNodeShardLib implements INodeSelectionStrategy
 {
     ISharding sharding;
  //   IShardPrimitives state;

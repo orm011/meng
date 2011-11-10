@@ -2,7 +2,7 @@ package com.twitter.dataservice.shardutils;
 
 import java.io.ByteArrayOutputStream;
 
-public class Node implements Hashable
+public class Node implements IByteSerializable
 {
   int nodeNumber;
 

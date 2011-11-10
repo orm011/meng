@@ -21,13 +21,12 @@ public class TwoTierHashSharding implements ISharding
       return shards.size();
   }
   
-  
+  //TODO: move these things, and system parameters into single location read from external file.
   private final static int DEFAULT_NUMSHARDS = 1000;
   private final static int DEFAULT_EXCEPTION_TIER_SPLIT = 2;
   private final static int DEFAULT_EXCEPTION_TIER_NUM_NODES = 2;
   
   SortedMap<Token,Node> shards = new TreeMap<Token, Node>();
-  Map<Vertex,Integer> exceptions; //figure out how to populate this and if we need to.
 
   final static HierarchicalHashFunction hashfun = new HierarchicalHashFunction();
 
@@ -49,7 +48,7 @@ public class TwoTierHashSharding implements ISharding
           shards.put(tk, nodeIt.next());
       }
       
-      //for each exception, DO THE RIGHT THING: 
+      //for each heavy vertex, DO THE RIGHT THING: 
       //insert a 0th shard to take care of the previous node's edges.
       //then insert shards partitioning its range
       for (Vertex v: exceptions){          
@@ -183,22 +182,6 @@ public class TwoTierHashSharding implements ISharding
   private final static int SHARDS_PER_SPECIAL_NODE = 4;
   //private final static int OPTIMAL_SINGLE_NODE_SHARD_SIZE = PROMOTE_NODE;
   
-  void maybeUpdateVertex(Vertex v, Integer count){
-    //look at the exceptions map and at the count and see if we should reevalute this vertex's category
-     //TODO: implement more complex policy based on number of shards desirable
-    
-      //this part needs to behave as if done atomically, and the local indexed versions of the sharding state need to 
-      //be consistent with the actual state in zK
-    
-     if (exceptions.containsKey(v) && count < DEMOTE_NODE){
-         demoteVertex(v);
-     } else if (!exceptions.containsKey(v) && count > PROMOTE_NODE){
-         promoteVertex(v);
-     }     
-    
-     
-  }
-
   private void demoteVertex(Vertex v){
       //update clutch: remove assignments
       //wait on clutch state update
@@ -209,7 +192,7 @@ public class TwoTierHashSharding implements ISharding
   
   private void promoteVertex(Vertex v){
       //TODO: later
-      //update clutch if possible
+      //from clutch update if possible
       //wait on clutch assignment states update
       //update local to reflect those changes    
   }

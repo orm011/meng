@@ -1,8 +1,7 @@
 package com.twitter.dataservice.simulated;
 
 import com.twitter.dataservice.remotes.ICompleteWorkNode;
-import com.twitter.dataservice.remotes.IUncheckedWorkDataNode;
-import com.twitter.dataservice.sharding.IShardLib;
+import com.twitter.dataservice.sharding.INodeSelectionStrategy;
 import com.twitter.dataservice.sharding.RoundRobinShardLib;
 import com.twitter.dataservice.sharding.PickFirstNodeShardLib;
 import com.twitter.dataservice.sharding.TwoTierHashSharding;
@@ -19,11 +18,11 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class APIServer
+public class APIServer implements IAPIServer
 {
     //TODO: make it api have interface like an individual node?;
     Map<Node, ICompleteWorkNode> nodes = new HashMap<Node, ICompleteWorkNode>();
-    private IShardLib shardinglib = null; // see constructor
+    private INodeSelectionStrategy shardinglib = null; // see constructor
 
     //everything runs in one process
     public static APIServer apiWithGivenWorkNodes(List<? extends ICompleteWorkNode> givenNodes){
@@ -80,7 +79,7 @@ public class APIServer
         return result;        
     }
 
-    public Collection<Vertex> getAllEdges(Vertex v) {
+    public Collection<Vertex> getFanout(Vertex v) {
       Collection<Node> destinations = shardinglib.getNodes(v);
       Collection<Vertex> ans = null;
 
@@ -105,15 +104,24 @@ public class APIServer
         } catch (RemoteException re){
             throw new RuntimeException(re);
         }
-    }
+    }   
     
+    //TODO: move this. Right now this tests whether the RMI works and prints to see 
+    //if results make sense.
     public static void main(String[] args){
         APIServer api = APIServer.apiWithRemoteWorkNodes(args);
         System.out.println("about to request...");
         Edge mark1 = api.getEdge(new Vertex(1), new Vertex(2));
         System.out.println(mark1);
         
-        Collection<Vertex> vertices = api.getAllEdges(new Vertex(1));
+        Collection<Vertex> vertices = api.getFanout(new Vertex(1));
         System.out.println(vertices);
+    }
+
+    @Override
+    public Collection<Vertex> getIntersection(Vertex v, Vertex w)
+    {
+        // TODO Auto-generated method stub
+        return null;
     }
 }

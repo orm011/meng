@@ -5,7 +5,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
 
-public class Vertex implements Hashable, Serializable
+public class Vertex implements IByteSerializable, Serializable
 {
     final int id;
 

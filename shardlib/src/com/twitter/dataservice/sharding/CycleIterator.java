@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
+//TODO: eventually replace this with google collections implementation
 public class CycleIterator<K> implements Iterator<K>{
       
       private Iterable<K> col;
