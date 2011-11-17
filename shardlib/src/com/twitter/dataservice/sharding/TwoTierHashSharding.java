@@ -98,7 +98,7 @@ public class TwoTierHashSharding implements ISharding
   }
   
   //Methods to read the shard state  
-  @Override public Pair<Shard,Collection<Node>> getShardForEdgeQuery(Edge e) {
+  @Override public Pair<Shard,Collection<Node>> getShardForEdgeQuery(Edge  e) {
         Token tok = hashfun.hash(e);
         List<Pair<Token, List<Node>>> queryResult = hashRingRangeQuery(new Pair<Token, Token>(tok, tok));
         

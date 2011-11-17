@@ -17,8 +17,7 @@ import org.junit.Test;
 import com.twitter.dataservice.remotes.ICompleteWorkNode;
 import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Vertex;
-import com.twitter.dataservice.simulated.BenchmarkData.Query;
-import com.twitter.dataservice.simulated.BenchmarkData.WorkloadParams;
+import com.twitter.dataservice.simulated.parameters.WorkloadParams;
 
 
 
@@ -93,13 +92,7 @@ public class SkewedDegreeGraphTest
             itq.next().execute(testApi);
         }        
 
-        Map<Class, Integer> counts = testNode.getSummary();
-        Assert.assertEquals(Integer.valueOf(numq), counts.get(Query.EdgeQuery.class));
-    }
-    
-    @Test
-    public void showGraphSkew(){
-        SkewedDegreeGraph sk = new SkewedDegreeGraph(1000, 100, 1);
-        sk.plotGraphSkew(10);
+        Counter<Class> counts = testNode.getSummary();
+        Assert.assertEquals(Integer.valueOf(numq), counts.getCount(Query.EdgeQuery.class));
     }
 }

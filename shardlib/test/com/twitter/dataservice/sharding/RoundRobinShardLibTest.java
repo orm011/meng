@@ -15,11 +15,9 @@ public class RoundRobinShardLibTest extends TestCase {
     RoundRobinShardLib dh = new RoundRobinShardLib(10);
     Vertex testVer = new Vertex(0, 1);
     Vertex testVer1 = new Vertex(1, 1);
-    Edge testEdge1 = new Edge(testVer, testVer);
-    Edge testEdge2 = new Edge(testVer, testVer1);
-
-    Node r1 = dh.getNode(testEdge1);
-    Node r2 = dh.getNode(testEdge2);
+    
+    Node r1 = dh.getNode(testVer, testVer);
+    Node r2 = dh.getNode(testVer, testVer1);
     Node r3 = getUniqueNodeFromCollection(dh.getNodes(testVer));
     Node r4 = getUniqueNodeFromCollection(dh.getNodes(testVer1));
     Node r5 = getUniqueNodeFromCollection(dh.getNodes(new Vertex(10,0)));

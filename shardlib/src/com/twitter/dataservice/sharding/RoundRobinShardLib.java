@@ -19,8 +19,8 @@ public class RoundRobinShardLib implements INodeSelectionStrategy
         this.numNodes = numNodes;
     }
    
-  @Override public Node getNode(Edge e) {
-    LinkedList<Node> lst = (LinkedList<Node>) getNodes(e.getLeftEndpoint());
+  @Override public Node getNode(Vertex v, Vertex w) {
+    LinkedList<Node> lst = (LinkedList<Node>) getNodes(v);
     return lst.get(0);
   }
 

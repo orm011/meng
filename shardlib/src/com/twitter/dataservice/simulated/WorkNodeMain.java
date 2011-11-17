@@ -13,7 +13,7 @@ public class WorkNodeMain
         
         try{
             System.out.printf("Registering work node %s...\n", name);
-            Remote dn = (Remote) new CompleteWorkNode();
+            Remote dn = (Remote) new CounterBackedWorkNode();
             Naming.rebind(name, dn);
 
             //this message is looked for by a test script, don't change.

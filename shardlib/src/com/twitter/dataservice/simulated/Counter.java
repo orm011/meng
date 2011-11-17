@@ -4,7 +4,9 @@ import java.util.Map;
 
 
 //TODO: create operation to 'add' counters?
-public interface Counter<K> extends Map<K, Integer>
+public interface Counter<K>
 {
     public Integer increaseCount(K key);
+    
+    public Integer getCount(K key);
 }

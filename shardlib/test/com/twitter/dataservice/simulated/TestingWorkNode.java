@@ -9,7 +9,6 @@ import java.util.Map;
 import com.twitter.dataservice.remotes.ICompleteWorkNode;
 import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Vertex;
-import com.twitter.dataservice.simulated.BenchmarkData.Query;
 
 /*
  * used to check all calls are being made
@@ -30,7 +29,7 @@ public class TestingWorkNode implements ICompleteWorkNode
     }
 
     @Override
-    public Collection<Vertex> getFanOut(Vertex v) throws RemoteException
+    public Collection<Vertex> getFanout(Vertex v) throws RemoteException
     {
         counter.increaseCount(Query.FanoutQuery.class);
         return null;
@@ -49,8 +48,8 @@ public class TestingWorkNode implements ICompleteWorkNode
         numEdges++;
     }
     
-    public Map<Class, Integer> getSummary(){
-        return Collections.unmodifiableMap(counter);
+    public Counter<Class> getSummary(){
+        return counter;
     }
     
     public int getNumEdges(){

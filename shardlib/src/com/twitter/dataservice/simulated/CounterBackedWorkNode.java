@@ -14,12 +14,12 @@ import com.twitter.dataservice.remotes.ICompleteWorkNode;
 import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Vertex;
 
-public class CompleteWorkNode  extends UnicastRemoteObject implements ICompleteWorkNode
+public class CounterBackedWorkNode  extends UnicastRemoteObject implements ICompleteWorkNode
 {   
     //TODO: will need to keep a dictionary or so to store data
-    Map<Vertex, Integer> internalCount = new HashMap<Vertex, Integer>();
+    Counter<Vertex> internalCount = new MapBackedCounter<Vertex>();
     
-    protected CompleteWorkNode() throws RemoteException
+    public CounterBackedWorkNode() throws RemoteException
     {
         super();
     }
@@ -30,18 +30,19 @@ public class CompleteWorkNode  extends UnicastRemoteObject implements ICompleteW
         //we don't check if it is there, to not have to keep track.
         //we assume the shardling lib did a good job of directing the request.
         //edges have a payload, check parameters in systemparams.
-        assert internalCount.containsKey(left);
+        assert internalCount.getCount(left) > 0;
         System.out.println("Edge request");
         return new Edge(left, right);
     }
 
     @Override
-    public Collection<Vertex> getFanOut(Vertex v) throws RemoteException
+    public Collection<Vertex> getFanout(Vertex v) throws RemoteException
     {
         System.out.println("FanOut request");
+        int x = 0;
         
-        assert internalCount.containsKey(v);
-        ArrayList<Vertex> answer = new ArrayList<Vertex>(internalCount.get(v));        
+        assert (x = internalCount.getCount(v)) > 0;
+        ArrayList<Vertex> answer = new ArrayList<Vertex>(x);        
         for (int i = 0; i < answer.size(); i++){
             answer.add(i, new Vertex(i));
         }
@@ -60,8 +61,7 @@ public class CompleteWorkNode  extends UnicastRemoteObject implements ICompleteW
     public void putEdge(Edge e) throws RemoteException
     {
         System.out.println("put request");
-        Integer prev;
-        if ((prev = internalCount.get(e.getLeftEndpoint())) == null) internalCount.put(e.getLeftEndpoint(), 1);
-        else internalCount.put(e.getRightEndpoint(), prev + 1);
+        internalCount.increaseCount(e.getLeftEndpoint());
     }
+
 }

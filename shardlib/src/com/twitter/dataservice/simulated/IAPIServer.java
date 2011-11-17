@@ -12,4 +12,6 @@ public interface IAPIServer
     public Collection<Vertex> getFanout(Vertex v); 
     
     public Collection<Vertex> getIntersection(Vertex v, Vertex w);
+    
+    public void putEdge(Edge e);
 }

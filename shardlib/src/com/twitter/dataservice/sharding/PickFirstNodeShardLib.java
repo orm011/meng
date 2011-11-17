@@ -23,10 +23,6 @@ public class PickFirstNodeShardLib implements INodeSelectionStrategy
         //state = zkState;
     }
 
-    public Node getNode(Edge e){
-        Pair<Shard, Collection<Node>> relevantShard = sharding.getShardForEdgeQuery(e);
-        return getNodeForQuery(relevantShard.getRight());
-    }
     
     public Collection<Node> getNodes(Vertex v){
         List<Pair<Shard, Collection<Node>>> involved= sharding.getShardForVertexQuery(v);
@@ -61,6 +57,13 @@ public class PickFirstNodeShardLib implements INodeSelectionStrategy
         assert nodeit.hasNext();
         Node answer = nodeit.next();
         return answer;
+    }
+
+    @Override
+    public Node getNode(Vertex v, Vertex w)
+    {
+        Pair<Shard, Collection<Node>> relevantShard = sharding.getShardForEdgeQuery(new Edge(v, w));
+        return getNodeForQuery(relevantShard.getRight());
     }
 
 }

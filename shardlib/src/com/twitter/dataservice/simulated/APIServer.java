@@ -67,7 +67,7 @@ public class APIServer implements IAPIServer
     }
 
     public Edge getEdge(Vertex v, Vertex w){
-        Node destination = shardinglib.getNode(new Edge(v, w));
+        Node destination = shardinglib.getNode(v, w);
         Edge result = null;
 
         try {
@@ -86,7 +86,7 @@ public class APIServer implements IAPIServer
       try{
         //TODO: make calls parallel
         for (Node n : destinations){
-            ans = nodes.get(n).getFanOut(v);
+            ans = nodes.get(n).getFanout(v);
         }
         
       } catch (RemoteException re){
@@ -97,7 +97,7 @@ public class APIServer implements IAPIServer
     }
 
     public void putEdge(Edge e){
-        Node n = shardinglib.getNode(e);
+        Node n = shardinglib.getNode(e.getLeftEndpoint(), e.getRightEndpoint());
         
         try {
             nodes.get(n).putEdge(e);

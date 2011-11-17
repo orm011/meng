@@ -31,17 +31,16 @@ import com.jrefinery.chart.XYPlot;
 import com.jrefinery.util.ui.Swing;
 import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Vertex;
-import com.twitter.dataservice.simulated.BenchmarkData.Query;
-import com.twitter.dataservice.simulated.BenchmarkData.WorkloadParams;
+import com.twitter.dataservice.simulated.parameters.WorkloadParams;
 
 //graph generation class, using the zipf distribution idea, and not really faithfully generating the graph, but only the degrees
-public class SkewedDegreeGraph implements BenchmarkData {
+public class SkewedDegreeGraph implements Graph {
       
       private ZipfDistributionImpl degGenerator;
       private int maxDegree;
       private int graphSize;
       private ArrayList<Integer> vertexDegrees;
-
+      
       /*
        * @param degreeSkewParameter must be > 0, the larger it is the less common it is
        * to have any nodes with large degree.
@@ -63,52 +62,7 @@ public class SkewedDegreeGraph implements BenchmarkData {
               }
           }
       }
-      
-      public void plotGraphSkew(int seconds){
-          Integer[][] degreeFrequency = new Integer[maxDegree][];
-          for (int i = 0; i < maxDegree; i++){
-              degreeFrequency[i] = new Integer[]{0};
-          }
-          
-          for (int i = 0; i < graphSize; i++){
-              degreeFrequency[vertexDegrees.get(i) - 1][0]++;
-          }
-          
-          
-//          public static JFreeChart createXYChart(XYDataSource data) {
-//
-//              Axis xAxis = new HorizontalNumberAxis("X");
-//              Axis yAxis = new VerticalNumberAxis("Y");
-//
-//              try {
-//                Plot xyPlot = new XYPlot(null, xAxis, yAxis);
-//                return new JFreeChart("XY Plot", new Font("Arial", Font.BOLD, 24), data, xyPlot);
-//              }
-//              catch (AxisNotCompatibleException e) {  // work on this later...
-//                return null;
-//              }
-//            }
-
-
-          
-          class GraphSkewChart extends JFrame {       
-              public GraphSkewChart(Number[][] data){
-                  JFreeChart  chart = JFreeChart.createVerticalBarChart(new DefaultCategoryDataSource(data));
-                  Container contentPane = new JPanel();
                   
-                  contentPane.add(new JFreeChartPanel(chart));
-                  setContentPane(contentPane);
-              }
-          };
-                    
-          GraphSkewChart ch = new GraphSkewChart(degreeFrequency);
-          ch.pack();
-          Swing.centerFrameOnScreen(ch);
-          ch.show();
-          try { Thread.sleep(seconds*1000); }
-          catch (InterruptedException ie){ System.out.println("plot closed"); }
-      } 
-            
       //use: to place it into the system
       public class SkewedDegreeGraphIterator implements Iterator<Edge>{
 
@@ -180,9 +134,17 @@ public class SkewedDegreeGraph implements BenchmarkData {
             ++queriesSoFar;
             int maxVertex = vertexDegrees.get(index - 1);
             
-            return Query.edgeQuery(new Vertex(index), 
-                    new Vertex(internalRandomness.nextInt(maxVertex)));
+            if (internalRandomness.nextFloat() < parameters.getPercentEdge()/100.0){
+                return Query.edgeQuery(new Vertex(index), 
+                        new Vertex(internalRandomness.nextInt(maxVertex)));
+            } else {
+                //if (internalRandomness.nextFloat() < parameters.getPercentEdge()/100 + parameters.getPercentVertex()/100)
+                return Query.fanoutQuery(new Vertex(index));
+            }
+            
+            
         }
+            
 
         @Override
         public void remove()
@@ -203,5 +165,7 @@ public class SkewedDegreeGraph implements BenchmarkData {
     {
         return new SkewedDegreeGraphIterator();
     }
-  }
+    
+}
+
       

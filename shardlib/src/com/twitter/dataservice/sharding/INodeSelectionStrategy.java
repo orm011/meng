@@ -14,7 +14,7 @@ import java.util.Collection;
  */
 public interface INodeSelectionStrategy {
 
-    public Node getNode(Edge e);
+    public Node getNode(Vertex v, Vertex w);
     public Collection<Node> getNodes(Vertex v);
   
 }

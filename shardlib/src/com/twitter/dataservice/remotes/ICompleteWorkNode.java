@@ -12,7 +12,7 @@ public interface ICompleteWorkNode extends Remote
 {
     Edge getEdge(Vertex left, Vertex right) throws  RemoteException;
     
-    Collection<Vertex> getFanOut(Vertex v) throws RemoteException;
+    Collection<Vertex> getFanout(Vertex v) throws RemoteException;
     
     List<Vertex> getIntersection(Vertex v, Vertex w) throws RemoteException;
     

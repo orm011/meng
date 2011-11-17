@@ -2,6 +2,7 @@ package com.twitter.dataservice.shardutils;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -257,4 +258,5 @@ public class TokenTest
         Assert.assertEquals(new Token(makeArr(0x10, 0xff)), test2.predecessor());
         
     }
+  
 }

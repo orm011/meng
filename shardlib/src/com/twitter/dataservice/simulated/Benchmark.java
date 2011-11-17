@@ -1,58 +1,69 @@
 package com.twitter.dataservice.simulated;
 
+import java.rmi.RemoteException;
+import java.util.Arrays;
 import java.util.Iterator;
-import java.util.Random;
-import java.util.logging.Logger;
 
-import org.apache.commons.math.distribution.ExponentialDistributionImpl;
-import org.apache.commons.math.distribution.ZipfDistribution;
-import org.apache.commons.math.distribution.ZipfDistributionImpl;
-import org.slf4j.LoggerFactory;
+import org.apache.log4j.PropertyConfigurator;
+import org.slf4j.Logger;
 
 
-import com.jrefinery.chart.demo.JFreeChartDemo;
+import com.twitter.dataservice.remotes.ICompleteWorkNode;
 import com.twitter.dataservice.shardutils.Edge;
-import com.twitter.dataservice.shardutils.Vertex;
-import com.twitter.dataservice.simulated.BenchmarkData.Query;
-import com.twitter.dataservice.simulated.BenchmarkData.WorkloadParams;
+import com.twitter.dataservice.simulated.parameters.GraphParameters;
+import com.twitter.dataservice.simulated.parameters.WorkloadParams;
 
 public class Benchmark {
+    
+    static Logger logger;
+    
+    static {
+        PropertyConfigurator.configure("/Users/oscarm/workspace/oscarmeng/shardlib/log4j.properties");
+        logger = org.slf4j.LoggerFactory.getLogger(Benchmark.class);
+    }
+    
+    public static void main(String[] args) {
+        
+      ICompleteWorkNode[] nodes;
 
-    public static void main(String[] args) {        
-      org.slf4j.Logger log = LoggerFactory.getLogger(Benchmark.class);      
-      log.error("turun");
-      if (log.isDebugEnabled()){
-          System.out.println("haha");
-      } else if (log.isErrorEnabled()){
-          System.out.println("hehe");
+      try
+        {
+            nodes = new ICompleteWorkNode[]{new CounterBackedWorkNode(), new CounterBackedWorkNode()};
+        } catch (RemoteException e)
+        {
+            throw new RuntimeException(e);
+        }
+      
+      IAPIServer apiServer = APIServer.apiWithGivenWorkNodes(Arrays.asList(nodes));
+      
+      GraphParameters graphParams = new GraphParameters();
+      
+      Graph graph = graphParams
+      .degreeSkew(1)
+      .maxDegree(10)
+      .numberEdges(10)
+      .numberVertices(5)
+      .build();
+      
+      WorkloadParams workloadParams = (new WorkloadParams.Builder())
+      .numberOfQueries(10)    
+      .percentEdge(50)
+      .percentVertex(50)  
+      .skew(1)
+      .build();
+
+      IAPIServer api = new LatencyTrackingAPIServer(apiServer, workloadParams, graphParams);
+      
+      Iterator<Edge> it = graph.graphIterator();
+      while (it.hasNext()){
+          apiServer.putEdge(it.next());
       }
+      
+      System.out.println("done loading graph");
+      
+      Iterator<Query> ot = graph.workloadIterator(workloadParams);
             
-      log.debug("hello world");
-      System.out.println("hello");
-      
-      
-      //APIServer api = APIServer.apiWithGivenWorkNodes(givenN);
-      //IAPIServer iapi = new LatencyTrackingAPIServer(api, 1);
-      //SkewedDegreeGraph graph = new SkewedDegreeGraph(10, 1, 1);
-      
-      //iapi.getEdge(new Vertex(0), new Vertex(1));
-      //load
-      //Iterator<Edge> it = graph.graphIterator();
-      //while (it.hasNext()){
-//          api.putEdge(it.next());
-//      }
-//      
-//      System.out.println("done creating graph");
-//
-//      //query
-//      WorkloadParams params = (new WorkloadParams.Builder())
-//      .numberOfQueries(10)    
-//      .percentEdge(100)
-//      .percentVertex(0)  
-//      .skew(0.01)
-//      .build();
-//      
-//      Iterator<Query> ot = graph.workloadIterator(params);
-//      while (ot.hasNext()) ot.next().execute(api);
-  }
+      while (ot.hasNext()) ot.next().execute(api);
+    }
+    
 }
