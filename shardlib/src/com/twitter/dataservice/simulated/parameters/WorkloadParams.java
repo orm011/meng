@@ -7,7 +7,9 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
+/*
+ * name is also used in external scripts, don't change
+ */
 public class WorkloadParams {
     public int getNumberOfQueries(){
         return numberOfQueries;

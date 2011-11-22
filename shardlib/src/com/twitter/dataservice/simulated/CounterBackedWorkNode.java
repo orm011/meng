@@ -31,14 +31,14 @@ public class CounterBackedWorkNode  extends UnicastRemoteObject implements IComp
         //we assume the shardling lib did a good job of directing the request.
         //edges have a payload, check parameters in systemparams.
         assert internalCount.getCount(left) > 0;
-        System.out.println("Edge request");
+        //System.out.println("Edge request");
         return new Edge(left, right);
     }
 
     @Override
     public Collection<Vertex> getFanout(Vertex v) throws RemoteException
     {
-        System.out.println("FanOut request");
+        //System.out.println("FanOut request");
         int x = 0;
         
         assert (x = internalCount.getCount(v)) > 0;
@@ -53,7 +53,7 @@ public class CounterBackedWorkNode  extends UnicastRemoteObject implements IComp
     @Override
     public List<Vertex> getIntersection(Vertex v, Vertex w) throws RemoteException
     {
-        System.out.println("Intersection request");
+        //System.out.println("Intersection request");
         throw new UnsupportedOperationException();
     }
 
