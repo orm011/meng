@@ -39,7 +39,8 @@ public class SkewedDegreeGraph implements Graph {
       private ZipfDistributionImpl degGenerator;
       private int maxDegree;
       private int graphSize;
-      private ArrayList<Integer> vertexDegrees;
+      private int[] degreeTable;      
+      
       
       /*
        * @param degreeSkewParameter must be > 0, the larger it is the less common it is
@@ -51,12 +52,12 @@ public class SkewedDegreeGraph implements Graph {
               throw new IllegalArgumentException();
           this.graphSize = graphSize;
           this.maxDegree = maxDegree;
-              vertexDegrees = new ArrayList<Integer>(graphSize);
+          degreeTable  = new int[graphSize];
           degGenerator = new ZipfDistributionImpl(maxDegree, degreeSkewParamater);
                     
           for (int currentVertex = 0; currentVertex < graphSize; currentVertex++){
               try {
-                  vertexDegrees.add(currentVertex, degGenerator.sample());
+                  degreeTable[currentVertex] = degGenerator.sample();
               } catch (MathException me) {
                   throw new RuntimeException(me);
               }
@@ -82,7 +83,7 @@ public class SkewedDegreeGraph implements Graph {
 
             if (0 == currentEdge) {
                 ++currentVertex;
-                currentEdge = vertexDegrees.get(currentVertex) - 1;
+                currentEdge = degreeTable[currentVertex] - 1;
             } else {
                 --currentEdge;
             }
@@ -132,7 +133,7 @@ public class SkewedDegreeGraph implements Graph {
             }
             
             ++queriesSoFar;
-            int maxVertex = vertexDegrees.get(index - 1);
+            int maxVertex = degreeTable[index - 1];
             
             if (internalRandomness.nextFloat() < parameters.getPercentEdge()/100.0){
                 return Query.edgeQuery(new Vertex(index), 

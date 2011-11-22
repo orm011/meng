@@ -43,7 +43,8 @@ public class APIServer implements IAPIServer
         try {            
             for (String name: dataNodeNames){
                 System.out.printf("looking up node %s\n", name);
-              
+                //getting node names from command line args. I assume they are
+                //named in a word + number way (eg node1 node2 node4, then I identify them as 1 2 4 internally)
                 ICompleteWorkNode remote = (ICompleteWorkNode) Naming.lookup(name);
                 int id = Integer.parseInt(name.substring(name.split("[0-9]+", 0)[0].length(), name
                     .length()));
