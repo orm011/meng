@@ -6,19 +6,18 @@ max_argc = 7;
 opt_argc = 2;
 
 if length(args) < (max_argc - opt_argc)
-printf("usage: <script> systemparams graphparams workloadparams xlabel title maxx maxy\n");
-printf("NOTE: the first word of the title also goes to the output filename\n");
+printf("usage: <script> systemparams graphparams workloadparams xlabelval titleval maxx maxy\n");
+printf("NOTE: the first word of the titleval also goes to the output filename\n");
 quit;
 end
 
 system = args{1};
 graph = args{2};
 workload = args{3};
-xlabel = args{4}
-title = args{5};
+xlabelval = args{4}
+titleval = args{5};
 
 x = fscanf(stdin, "%d");
-x = x/1000;
 
 if length(args) < max_argc
 maxfreq = length(x);
@@ -45,8 +44,8 @@ disp(['values: ', statstring]);
 x = x(find(x < maxx));
 hist(x,50);
 ylabel('frequency');
-xlabel(xlabel);
-title(title, 'fontsize', 10);
+xlabel(xlabelval);
+title(titleval, 'fontsize', 10);
 
 miny = -0.3*maxy; 
 minx = -0.1*maxx; 
@@ -60,7 +59,8 @@ text(0.5*maxx, 0.5*maxy + 1*step, statstring);
 
 show_parameters(system, graph, workload)
 graph_params = strsplit(graph, ' ', true);
-print([title{1}, graph_params{end}, '.pdf'], '-dpdf', '-landscape')
+title_first = strsplit(titleval, ' ', true){1};
+print([title_first, graph_params{end}, '.pdf'], '-dpdf', '-landscape')
 
 sleep(0.01); 
 quit;
