@@ -2,27 +2,23 @@ package com.twitter.dataservice.simulated;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-
-import javax.swing.plaf.multi.MultiSeparatorUI;
 
 import junit.framework.Assert;
 
 import org.junit.Test;
-
-import com.twitter.dataservice.remotes.ICompleteWorkNode;
 import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Vertex;
-import com.twitter.dataservice.simulated.parameters.WorkloadParams;
+import com.twitter.dataservice.simulated.parameters.WorkloadParameters;
 
 
 
 public class SkewedDegreeGraphTest
 {
+    
+    //use map counter instead
     private <K> void increaseCount(K key, Map<K, Integer> counts){
         if (!counts.containsKey(key)) counts.put(key, 0);
         
@@ -38,7 +34,7 @@ public class SkewedDegreeGraphTest
             increaseCount(e.getLeftEndpoint(), vertices);
         }
         
-        Assert.assertEquals(expected, vertices.size());
+        Assert.assertEquals(expected, vertices.size() + graph.getDisconnnectedVertices());
         for (Integer count: vertices.values()) Assert.assertTrue(count <= maxDegree);
     }
     
@@ -46,15 +42,51 @@ public class SkewedDegreeGraphTest
     public void testAllVerticesPresent(){
         for (int i = 1; i < 10; ++i){
             for (int maxdeg = 1; maxdeg < 10; ++maxdeg){
-                assertNumVertices(i, maxdeg, new SkewedDegreeGraph(i, maxdeg, 1));
-                assertNumVertices(i, maxdeg, new SkewedDegreeGraph(i, maxdeg, 2));
+                assertNumVertices(i, maxdeg*i, SkewedDegreeGraph.makeSkewedDegreeGraph(i, maxdeg*i, maxdeg, 1));
+                assertNumVertices(i, maxdeg*i, SkewedDegreeGraph.makeSkewedDegreeGraph(i, maxdeg*i, maxdeg, 2));
             }
         }
     }
     
     @Test
+    public void testConstructor(){
+        SkewedDegreeGraph g1 = new SkewedDegreeGraph(new int[]{1,2,3});
+        Assert.assertEquals(6, g1.getActualDegree());
+        Assert.assertEquals(3, g1.getActualMaxDegree());
+        Assert.assertEquals(0, g1.getDisconnnectedVertices());
+        Assert.assertEquals(1, g1.getDegree(0));
+        Assert.assertEquals(2, g1.getDegree(1));
+        Assert.assertEquals(3, g1.getDegree(2));
+        
+        SkewedDegreeGraph g0; 
+        
+        try {
+            g0 = new SkewedDegreeGraph(new int[]{1,0});
+            Assert.fail();
+        } catch (IllegalArgumentException e){}
+        
+        
+        SkewedDegreeGraph g2 = new SkewedDegreeGraph(new int[]{1,2,1,1});
+        
+        Assert.assertEquals(5, g2.getActualDegree());
+        Assert.assertEquals(2, g2.getActualMaxDegree());
+        Assert.assertEquals(1, g2.getDegree(0));
+        Assert.assertEquals(1, g2.getDegree(1));
+        Assert.assertEquals(1, g2.getDegree(2));
+        Assert.assertEquals(2, g2.getDegree(3));
+        Assert.assertEquals(0, g2.getDisconnnectedVertices());
+        
+        Iterator<Edge> it = g2.graphIterator();
+        Assert.assertTrue(it.hasNext());
+        Assert.assertEquals(new Edge(new Vertex(0), new Vertex(0)), it.next());
+        //Assert.assertFalse(it.hasNext());
+    }
+    
+    
+    
+    @Test
     public void testWorkloadIter(){
-        SkewedDegreeGraph g = new SkewedDegreeGraph(10, 10, 1);
+        SkewedDegreeGraph g = SkewedDegreeGraph.makeSkewedDegreeGraph(10, 100, 10, 1);
         
         List<TestingWorkNode> testNodes = new ArrayList<TestingWorkNode>(1);
         
@@ -63,21 +95,22 @@ public class SkewedDegreeGraphTest
         
         APIServer testApi = APIServer.apiWithGivenWorkNodes(testNodes);
         for (int i = 0; i < 10; ++i){
-            WorkloadParams params = (new WorkloadParams.Builder()).numberOfQueries(i).queryTypeDistribution(100, 0, 0).build();
+            WorkloadParameters params = (new WorkloadParameters.Builder()).numberOfQueries(i).queryTypeDistribution(100, 0, 0).build();
             Iterator<Query> itq = g.workloadIterator(params);
             int count = 0;
             
             while (itq.hasNext()){   
                 ++count;
                 itq.next().execute(testApi);
-            }        
+            }
+            
             Assert.assertEquals(i, count);
         }
     }
     
     @Test
     public void testWorkloadAndApi(){
-        SkewedDegreeGraph g = new SkewedDegreeGraph(10, 10, 1);        
+        SkewedDegreeGraph g = SkewedDegreeGraph.makeSkewedDegreeGraph(10, 100, 10, 1);        
         List<TestingWorkNode> testNodes = new ArrayList<TestingWorkNode>(1);
         TestingWorkNode testNode = new TestingWorkNode();
         testNodes.add(testNode);
@@ -85,7 +118,7 @@ public class SkewedDegreeGraphTest
         APIServer testApi = APIServer.apiWithGivenWorkNodes(testNodes);
         
         int numq = 100;
-        WorkloadParams params = (new WorkloadParams.Builder()).numberOfQueries(numq).queryTypeDistribution(100, 0, 0).build();
+        WorkloadParameters params = (new WorkloadParameters.Builder()).numberOfQueries(numq).queryTypeDistribution(100, 0, 0).build();
         Iterator<Query> itq = g.workloadIterator(params);
 
         while (itq.hasNext()){   

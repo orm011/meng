@@ -46,10 +46,9 @@ echo $WORKLOAD
 
 if [[ $1 == --latency ]]
 then
-echo 'if'
+echo 'latencyplot'
 cat $FILE | grep $QUERYDATA | awk '{print $7}' |\
 octave --silent plot_latency.m "$SYSTEM" "$GRAPH" "$WORKLOAD" 'latency (nanos)' 'latency histogram' $MAXX $MAXY
-echo 'done'
 else
 if [[ $1 == --throughput ]]
 then
@@ -61,6 +60,7 @@ octave --silent plot_throughput.m $OUTPUTFILE "$TITLE"
 else
 if [[ $1 == --degree ]] 
 then
+echo 'degree plot'
 cat $FILE | grep $GRAPHDATA | awk '{print $7}' |\
 octave --silent plot_latency.m "$SYSTEM" "$GRAPH" "$WORKLOAD" 'degree' 'degree histogram' $MAXX $MAXY
 fi 

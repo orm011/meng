@@ -46,7 +46,7 @@ public class Vertex implements IByteSerializable, Serializable
     }
 
   @Override public String toString() {
-    return String.format("Vertex: id: %d, workFactor: %d", id, getWorkFactor());
+    return String.format("Vertex: %d", id);
   }
 
   @Override

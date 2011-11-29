@@ -10,7 +10,7 @@ public class  Edge implements Serializable
     Pair<Vertex, Vertex> ends;    
     Vertex left;
     Vertex right;
-    byte[] payload = new byte[SystemParameters.edgespace];
+    byte[] payload = new byte[SystemParameters.instance().edgespace];
     
     public Edge(Vertex left, Vertex right){
         this.left = left;
@@ -23,6 +23,12 @@ public class  Edge implements Serializable
     
     public Vertex getRightEndpoint(){
         return right;
+    }
+    
+    @Override
+    public boolean equals(Object o){
+        return o instanceof Edge && ((Edge) o).getLeftEndpoint().equals(this.getLeftEndpoint()) &&
+        ((Edge) o).getRightEndpoint().equals(this.getRightEndpoint());
     }
     
     

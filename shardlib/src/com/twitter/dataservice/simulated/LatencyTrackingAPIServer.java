@@ -11,7 +11,7 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Vertex;
 import com.twitter.dataservice.simulated.parameters.GraphParameters;
-import com.twitter.dataservice.simulated.parameters.WorkloadParams;
+import com.twitter.dataservice.simulated.parameters.WorkloadParameters;
 
 public class LatencyTrackingAPIServer implements IAPIServer
 {
@@ -30,15 +30,15 @@ public class LatencyTrackingAPIServer implements IAPIServer
     //general info that must go with each record so that I sleep well:
         //system parameters, graph parameters, workload parameters, timestamp    
         //TODO: add sharding Strategy param
-        //TODO: check if logging is affecting performance 
-    
+        //TODO: check if logging is affecting performance. done: it is. goes from 400 /s to 350 /s.
     static class LoggerCollector extends BasicCollector implements MetricsCollector {
         
-        public LoggerCollector(GraphParameters graphParams, WorkloadParams workloadParams)
+        public LoggerCollector(GraphParameters graphParams, WorkloadParameters workloadParams)
         {
             super(graphParams, workloadParams);
         }
 
+        //TODO: use the abstractParameters class for this?
         public void logFanout(long timeStart, long timeEnd,  Vertex arg, int answer){
             System.out.println("fanout log");
             Object[] contents = new Object[]{
@@ -85,7 +85,7 @@ public class LatencyTrackingAPIServer implements IAPIServer
         AtomicInteger latenciesPos = new AtomicInteger(0);
         long[] latencies;
         
-        public InMemoryCollector(GraphParameters graphParams, WorkloadParams workloadParams)
+        public InMemoryCollector(GraphParameters graphParams, WorkloadParameters workloadParams)
         {
             super(graphParams, workloadParams);            
             ends = new long[workloadParams.getNumberOfQueries()];
@@ -105,6 +105,7 @@ public class LatencyTrackingAPIServer implements IAPIServer
             int pos = endsPos.getAndIncrement();
             ends[pos] = timeEnd;
             latencies[pos] = timeEnd - timeStart;
+            latencies[pos] /= 1000;
         }
 
         @Override
@@ -113,13 +114,13 @@ public class LatencyTrackingAPIServer implements IAPIServer
             int pos = endsPos.getAndIncrement();
             ends[pos] = timeEnd;
             latencies[pos] = timeEnd - timeStart;
+            latencies[pos] /= 1000;
         }
 
         @Override
         public void logIntersection(long timeStart, long timeEnd, Vertex arg1, Vertex arg2, int answer)
         {
             throw new NotImplementedException();
-            // TODO Auto-generated method stub
         }
         
     };

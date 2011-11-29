@@ -60,7 +60,7 @@ public class CounterBackedWorkNode  extends UnicastRemoteObject implements IComp
     @Override
     public void putEdge(Edge e) throws RemoteException
     {
-        System.out.println("put request");
+        //System.out.println("put request");
         internalCount.increaseCount(e.getLeftEndpoint());
     }
 
