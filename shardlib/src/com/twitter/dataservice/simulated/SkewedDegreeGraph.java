@@ -31,6 +31,7 @@ import com.jrefinery.chart.XYPlot;
 import com.jrefinery.util.ui.Swing;
 import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Vertex;
+import com.twitter.dataservice.simulated.parameters.GraphParameters;
 import com.twitter.dataservice.simulated.parameters.WorkloadParameters;
 
 //graph generation class, using the zipf distribution idea, and not really faithfully generating the graph, but only the degrees
@@ -48,6 +49,11 @@ public class SkewedDegreeGraph implements Graph {
        * to have any nodes with large degree.
        * @param graphSize: number of vertices in the graph
        */
+      
+      static public SkewedDegreeGraph makeSkewedDegreeGraph(GraphParameters gp){
+          return SkewedDegreeGraph.makeSkewedDegreeGraph(gp.getNumberVertices(), gp.getNumberEdges(), 
+                  gp.getUpperDegreeBound(), gp.getDegreeSkewParameter());
+      }
       
       static public SkewedDegreeGraph makeSkewedDegreeGraph(int numVertices, int targetNumberOfEdges, int upperDegreeBound, double degreeSkew){
           if (numVertices < 1 || upperDegreeBound< 1 || degreeSkew <= 0)
@@ -164,7 +170,7 @@ public class SkewedDegreeGraph implements Graph {
         int queriesSoFar = 0;
           //this can choose a skew but not necessarily a correlation with degree skew
         public QueryWorkloadIterator(WorkloadParameters params){
-            sampler = new ZipfDistributionImpl(numVertices, params.getSkew());
+            sampler = new ZipfDistributionImpl(numVertices, params.getQuerySkew());
             parameters = params;
         }
           
@@ -190,7 +196,7 @@ public class SkewedDegreeGraph implements Graph {
             ++queriesSoFar;
             int maxVertex = degreeTable[index - 1];
             
-            if (internalRandomness.nextFloat() < parameters.getPercentEdge()/100.0){
+            if (internalRandomness.nextFloat() < parameters.getPercentEdgeQueries()/100.0){
                 return Query.edgeQuery(new Vertex(index), 
                         new Vertex(internalRandomness.nextInt(maxVertex)));
             } else {

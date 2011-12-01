@@ -15,11 +15,19 @@ import com.twitter.dataservice.simulated.SkewedDegreeGraph;
 public class GraphParameters extends AbstractParameters {
     //prescribed values. Note maxdegree is usually much less than the bound.
     //numberEdges is a function of our target average  and num Vertices.
-    private int numberVertices;
-    private int numberEdges;
-    private int upperDegreeBound;
-    private int average;
-    private double degreeSkewParameter;
+        
+    //NOTE: don't change this without changing existing config files as well.
+    public static final String MAXDEGREE = "graph.maxDegree"; //TODO: get rid of 
+    public static final String AVERAGE_DEGREE = "graph.averageDegree";
+    public static final String SKEW_PARAMETER = "graph.degreeSkew";
+    public static final String NUMBER_VERTICES = "graph.numberVertices";
+    public static final String NUMBER_EDGES = "graph.numberEdges"; //TODO: get rid of
+    
+    private final int numberVertices;
+    private final int numberEdges;
+    private final int upperDegreeBound;
+    private final int average;
+    private final double degreeSkewParameter;
 
     
     public int getNumberEdges(){
@@ -42,46 +50,61 @@ public class GraphParameters extends AbstractParameters {
     public double getDegreeSkewParameter(){
         return this.degreeSkewParameter;
     }
+    
+    
+    public GraphParameters(int numberVertices, int numberEdges, int upperDegreeBound, int average,
+            double degreeSkewParameter)
+    {
+        super();
+        this.numberVertices = numberVertices;
+        this.numberEdges = numberEdges;
+        this.upperDegreeBound = upperDegreeBound;
+        this.average = average;
+        this.degreeSkewParameter = degreeSkewParameter;
+    }
+ 
+    public List<Map.Entry<String, Object>> fields(){
+        Map<String,Object> temp = new LinkedHashMap<String,Object>();
+        temp.put(NUMBER_VERTICES, numberVertices);
+        temp.put(NUMBER_EDGES, numberEdges); //TODO: replace with avg degree
+        temp.put(MAXDEGREE, upperDegreeBound); //note this is no longer used, TODO: remove
+        temp.put(SKEW_PARAMETER, degreeSkewParameter);
+        
+        return new LinkedList<Map.Entry<String, Object>>(temp.entrySet());
+    }
+    
+    public static class Builder {
+        int numberVertices;
+        int upperDegreeBound;
+        int average;
+        double degreeSkewParameter;
+
     //will add probably some other skew related parameters here
-    public GraphParameters numberVertices(int num){
+    public Builder numberVertices(int num){
         this.numberVertices = num;
         return this;
     }
     
-    public GraphParameters degreeBoundAndTargetAvg(int max, int average){
+    public Builder degreeBoundAndTargetAvg(int max, int average){
         this.upperDegreeBound = max;
         this.average = average;
         return this;
     }
     
-    public GraphParameters degreeSkew(double sk){
+    public Builder degreeSkew(double sk){
         this.degreeSkewParameter = sk;
         return this;
     }
 
-    //TODO: control ordering
-    public List<Map.Entry<String, Object>> fields(){
-        //TODO: check if built yet. 
-        Map<String,Object> temp = new LinkedHashMap<String,Object>();
-        temp.put("numberVertices", numberVertices);
-        temp.put("numberEdges", numberEdges);
-        temp.put("upperBoundOnDegree", upperDegreeBound); //note this is no longer valid, TODO: remove
-        temp.put("degreeSkew", degreeSkewParameter);
-
-        return new LinkedList<Map.Entry<String, Object>>(temp.entrySet());
-    }
-    
-    
-    public Graph build() {
+    public GraphParameters build(){
+        
         boolean check = 
             numberVertices > 0  
             && degreeSkewParameter > 0;
-        //    && numberVertices > upperDegreeBound;
             
         if (!check) throw new IllegalArgumentException("graph params invalid");
         
-        this.numberEdges = numberVertices*average;
-        SkewedDegreeGraph g = SkewedDegreeGraph.makeSkewedDegreeGraph(numberVertices, numberEdges, upperDegreeBound, degreeSkewParameter);
-        return g;
+        return new GraphParameters(this.numberVertices, this.numberVertices*this.average, this.upperDegreeBound, this.average, this.degreeSkewParameter);
+        }
     }
 }

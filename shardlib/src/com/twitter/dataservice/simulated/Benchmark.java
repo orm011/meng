@@ -1,12 +1,15 @@
 package com.twitter.dataservice.simulated;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.rmi.RemoteException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.Properties;
 import java.util.Random;
 
 import org.apache.log4j.FileAppender;
@@ -22,66 +25,88 @@ import com.twitter.dataservice.simulated.parameters.SystemParameters;
 import com.twitter.dataservice.simulated.parameters.WorkloadParameters;
 
 public class Benchmark {
+//    # (Milestone 1.1) Finish framework (< 1 unit)
+//
+//    1. parallelizing shard requests within an api request
+//    2. figuring out discrepancy in latency vs degree graph (ensure enough "work" is being done)
+//    3. add feature to remote node API to purge and reset (api server remote-wipes RMI nodes)
+//    4. config file or cli params for test variables
+
     
     static org.slf4j.Logger logger;
     
     static {
-        PropertyConfigurator.configure("/Users/oscarm/workspace/oscarmeng/shardlib/log4j.properties");
-        logger = org.slf4j.LoggerFactory.getLogger(Benchmark.class);
     }
     
     public static void main(String[] args) {
+        //TODO: read some logname marker string from the config as well. will help in selecting all the logs 
+        // for analysis. 
+        //TODO: make plot optional 
+        PropertyConfigurator.configure("/Users/oscarm/workspace/oscarmeng/shardlib/log4j.properties");
+        logger = org.slf4j.LoggerFactory.getLogger(Benchmark.class);
+        
 
-//        //0.001, 0.1, 0.3 ... 5
-//        double max = 6.0;
-//        double min = 0.1;
-//        double step = 0.1;
-//        int num = (int) ((max - min)/step);
-//        double[] skews = new double[num];
-//        
-//        for (int i = 0; i < num; i++){
-//            skews[i] = min + i*step;    
-//            runBenchmark(skews[i]);
-//        }
-        runBenchmark(100, 1000000);
-        //TODO: change this to take inputs (more) from elsewhere
+        Properties prop = new Properties();
+        
+        try
+        {
+            prop.load(new FileInputStream("Benchmark.properties"));
+        } catch (FileNotFoundException e)
+        {
+            throw new RuntimeException(e);
+        } catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+               
+        GraphParameters gp = new GraphParameters.Builder()
+        .degreeBoundAndTargetAvg(
+                Integer.parseInt(prop.getProperty(GraphParameters.MAXDEGREE)), 
+                Integer.parseInt(prop.getProperty(GraphParameters.AVERAGE_DEGREE)))
+        .degreeSkew(
+                Double.parseDouble(prop.getProperty(GraphParameters.SKEW_PARAMETER)))
+        .numberVertices(
+                Integer.parseInt(prop.getProperty(GraphParameters.NUMBER_VERTICES))).
+        build();
+        
+        
+        WorkloadParameters wp = new WorkloadParameters.Builder()
+        .numberOfQueries(
+                Integer.parseInt(prop.getProperty(WorkloadParameters.NUMBER_OF_QUERIES)))
+        .percentEdge(
+                Integer.parseInt(prop.getProperty(WorkloadParameters.PERCENT_EDGE_QUERIES)))
+        .percentVertex(
+                Integer.parseInt(prop.getProperty(WorkloadParameters.PERCENT_FANOUT_QUERIES)))
+        .skew(
+                Double.parseDouble(prop.getProperty(WorkloadParameters.QUERY_SKEW)))
+        .build();
+        
+        System.out.println(gp);
+        System.out.println(wp);
+        System.out.println(SystemParameters.instance());
+        
+        String[] nodes; //TODO also read nodenames from config file, and construct system params using that.
+        //IAPIServer apiServer = APIServer.apiWithRemoteWorkNodes(nodes); 
+        IAPIServer apiServer;
+        try
+        {
+            apiServer = APIServer.apiWithGivenWorkNodes(Arrays.asList(
+                                new CounterBackedWorkNode[]{new CounterBackedWorkNode()}));
+        } catch (RemoteException e)
+        {
+            // TODO Auto-generated catch block
+            throw new RuntimeException();
+        }
+        
+        runBenchmark(gp, wp, apiServer);
+        
+        //TODO: get rid of vestigial 'maxDegree', figure what RMI names we need and how to parse them.
         System.exit(0);
     }
         
-    public static void runBenchmark(double skew, int edgesPerNode){
-      ICompleteWorkNode[] nodes;
-
-      try {
-            nodes = new ICompleteWorkNode[SystemParameters.instance().workNodes];
-            
-            for (int i = 0; i < SystemParameters.instance().workNodes; i++){
-                nodes[i] = new CounterBackedWorkNode();
-            }
-      } catch (RemoteException e) {
-            throw new RuntimeException(e);
-      }
-      
-      IAPIServer apiServer = APIServer.apiWithGivenWorkNodes(Arrays.asList(nodes)); 
-      
-      int VERTICES  = 1000;
-
-      //Note: making maxDegree 100k made the generation part take very long.
-      GraphParameters graphParams = new GraphParameters();
-      Graph graph = graphParams
-      .degreeSkew(skew)
-      .numberVertices(VERTICES)
-      .degreeBoundAndTargetAvg(VERTICES, edgesPerNode)
-      .build();      
-      
-      int QUERIES = 1000;
-      
-      WorkloadParameters workloadParams = (new WorkloadParameters.Builder())
-      .numberOfQueries(QUERIES)    
-      .percentEdge(0)
-      .percentVertex(100)  
-      .skew(0.001)
-      .build();
-
+    public static void runBenchmark(GraphParameters graphParams, WorkloadParameters workloadParams, IAPIServer apiServer){
+        
+      Graph graph = SkewedDegreeGraph.makeSkewedDegreeGraph(graphParams); //TODO: change this
       //MetricsCollector omc = new LatencyTrackingAPIServer.LoggerCollector(graphParams, workloadParams);
       MetricsCollector omc = new LatencyTrackingAPIServer.InMemoryCollector(graphParams, workloadParams);
       IAPIServer api = new LatencyTrackingAPIServer(apiServer, omc);      
@@ -112,6 +137,7 @@ public class Benchmark {
       omc.finish();
       System.out.println("done with bench");
 
+      //reform this, we don't need it every time. but it may be useful to check basic behaviors
       ProcessBuilder degreePlotting = new ProcessBuilder(
               new String[]{
               "./plot.sh", 
@@ -128,7 +154,7 @@ public class Benchmark {
               "--latency", 
               "foo", 
               "100", 
-              String.valueOf(QUERIES/2), 
+              String.valueOf(100), 
               TimestampNameFileAppender.getLogName()})
       .directory(new File("/Users/oscarm/workspace/oscarmeng/shardlib/logs/"));
       
