@@ -19,4 +19,8 @@ public interface ICompleteWorkNode extends Remote
     //Random walk. Need to get to this later.
     
     void putEdge(Edge e) throws RemoteException;
+    
+    //some utilities
+    void reset() throws RemoteException;
+    int totalLoad() throws RemoteException;
 }

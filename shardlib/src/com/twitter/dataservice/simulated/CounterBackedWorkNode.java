@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.twitter.dataservice.remotes.ICompleteWorkNode;
 import com.twitter.dataservice.shardutils.Edge;
@@ -38,12 +39,13 @@ public class CounterBackedWorkNode  extends UnicastRemoteObject implements IComp
     @Override
     public Collection<Vertex> getFanout(Vertex v) throws RemoteException
     {
-        //System.out.println("FanOut request");
+        //System.out.println("FanOut request " + v);
         int x = 0;
         
-        assert (x = internalCount.getCount(v)) > 0;
+        if ( !((x = internalCount.getCount(v)) > 0)) throw new AssertionError();
+
         ArrayList<Vertex> answer = new ArrayList<Vertex>(x);        
-        for (int i = 0; i < answer.size(); i++){
+        for (int i = 0; i < x; i++){
             answer.add(i, new Vertex(i));
         }
         
@@ -60,8 +62,21 @@ public class CounterBackedWorkNode  extends UnicastRemoteObject implements IComp
     @Override
     public void putEdge(Edge e) throws RemoteException
     {
-        //System.out.println("put request");
         internalCount.increaseCount(e.getLeftEndpoint());
     }
 
+    @Override
+    public void reset() throws RemoteException
+    {
+        System.out.printf("resetting... before-count: %d", internalCount.getTotal());
+        internalCount = new MapBackedCounter<Vertex>();
+        System.out.printf(" after-count: %d\n", internalCount.getTotal());
+    }
+
+    @Override
+    public int totalLoad() throws RemoteException
+    {
+        return internalCount.getTotal();
+    }
+    
 }

@@ -55,4 +55,16 @@ public class TestingWorkNode implements ICompleteWorkNode
     public int getNumEdges(){
         return numEdges;
     }
+
+    @Override
+    public void reset() throws RemoteException
+    {
+        numEdges = 0;
+    }
+
+    @Override
+    public int totalLoad() throws RemoteException
+    {
+        return getNumEdges();
+    }
 }

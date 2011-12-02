@@ -41,7 +41,12 @@ disp(['quantiles: ', quantilestring])
 disp(['values: ', statstring]);
 
 %select only desired range
+disp(['total number of values: ', sprintf("%d",size(x,1))])
+
 x = x(find(x < maxx));
+disp(['total included in plot window: ', sprintf("%d", size(x,1))])
+assert(size(x,1) > 0, 'too few values in window. modify maxx param');
+
 hist(x,50);
 ylabel('frequency');
 xlabel(xlabelval);

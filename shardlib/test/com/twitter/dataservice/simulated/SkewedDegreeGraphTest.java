@@ -11,6 +11,7 @@ import junit.framework.Assert;
 import org.junit.Test;
 import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Vertex;
+import com.twitter.dataservice.simulated.parameters.GraphParameters;
 import com.twitter.dataservice.simulated.parameters.WorkloadParameters;
 
 
@@ -127,5 +128,22 @@ public class SkewedDegreeGraphTest
 
         Counter<Class> counts = testNode.getSummary();
         Assert.assertEquals(Integer.valueOf(numq), counts.getCount(Query.EdgeQuery.class));
+    }
+    
+    /*
+     * make sure numbering starts at 0
+     */
+    @Test
+    public void testWorkloadGeneratesOne(){
+        WorkloadParameters wp = new WorkloadParameters.Builder().numberOfQueries(10)
+        .percentVertex(100).percentEdge(0).skew(0.01).build();  //low skew should not affect this, 
+        
+        Graph g = new SkewedDegreeGraph(new int[]{1});
+        
+        Iterator<Query> work = g.workloadIterator(wp);
+        
+        Query nx = work.next();
+        Assert.assertTrue(work.next() instanceof Query.FanoutQuery);
+        Assert.assertEquals(new Vertex(0), ((Query.FanoutQuery) nx).v);
     }
 }

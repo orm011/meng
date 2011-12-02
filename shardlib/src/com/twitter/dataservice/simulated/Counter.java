@@ -9,4 +9,6 @@ public interface Counter<K>
     public Integer increaseCount(K key);
     
     public Integer getCount(K key);
+    
+    public int getTotal();
 }

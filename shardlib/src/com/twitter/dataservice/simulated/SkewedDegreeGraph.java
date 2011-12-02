@@ -187,14 +187,14 @@ public class SkewedDegreeGraph implements Graph {
             
             try
             {
-                index = sampler.sample();
+                index = sampler.sample() - 1;
             } catch (MathException e)
             {
                 throw new RuntimeException(e);
             }
             
             ++queriesSoFar;
-            int maxVertex = degreeTable[index - 1];
+            int maxVertex = degreeTable[index];
             
             if (internalRandomness.nextFloat() < parameters.getPercentEdgeQueries()/100.0){
                 return Query.edgeQuery(new Vertex(index), 

@@ -46,6 +46,15 @@ public class MapBackedCounter<K> implements Counter<K>
         if (internalMap.containsKey(key)) return internalMap.get(key);
         else return 0;
     }
+    
+    public int getTotal(){
+        int total = 0;
+        for (Map.Entry<K, Integer> entry : internalMap.entrySet()){
+            total += entry.getValue();
+        }
+        
+        return total;
+    }
 
     public boolean isEmpty()
     {

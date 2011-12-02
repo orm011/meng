@@ -50,6 +50,9 @@ public class APIServer implements IAPIServer
                     .length()));
                 Node local = new Node(id);
                 nodes.put(local, remote);
+                
+                //TODO: move this elsewhere? don't want to always reset.
+                remote.reset();
             }            
         } catch (RemoteException e){
             throw new RuntimeException(e);

@@ -1,20 +1,22 @@
 package com.twitter.dataservice.simulated;
 
-
-import java.awt.Container;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Properties;
 
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-
-import org.apache.commons.math.distribution.ZipfDistributionImpl;
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 import org.junit.Test;
+
+import com.twitter.dataservice.simulated.parameters.GraphParameters;
+import com.twitter.dataservice.simulated.parameters.WorkloadParameters;
+
 
 public class BenchmarkTest
 {    
@@ -38,4 +40,48 @@ public class BenchmarkTest
         
         lg.debug("PROBANDO");
     }
+    
+    // checking java's own property format
+    @Test public void propertyTest(){
+        Properties prop = new Properties();
+        prop.setProperty(GraphParameters.MAXDEGREE, "200");
+        prop.setProperty(GraphParameters.AVERAGE_DEGREE, "100");
+        prop.setProperty(GraphParameters.SKEW_PARAMETER, "1.0");
+        prop.setProperty(GraphParameters.NUMBER_VERTICES, "200");
+        
+        prop.setProperty(WorkloadParameters.NUMBER_OF_QUERIES, "1000");
+        prop.setProperty(WorkloadParameters.PERCENT_EDGE_QUERIES, "0");
+        prop.setProperty(WorkloadParameters.PERCENT_FANOUT_QUERIES, "100");
+        prop.setProperty(WorkloadParameters.QUERY_SKEW, "0.01");
+        
+        try
+        {
+            prop.store(new FileOutputStream(new File("testConfigFile.properties")), "hello");
+        } catch (FileNotFoundException e)
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IOException e)
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
+    
+    
+    @Test public void readPropertyTest(){
+        Properties p = new Properties();
+        
+        try
+        {
+            p.load(new FileReader("testPropertyfile.properties"));
+        } catch (FileNotFoundException e)
+        {
+            e.printStackTrace();
+        } catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+    }
+    
 }
