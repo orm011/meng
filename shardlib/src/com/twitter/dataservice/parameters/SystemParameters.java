@@ -1,4 +1,4 @@
-package com.twitter.dataservice.simulated.parameters;
+package com.twitter.dataservice.parameters;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -13,6 +13,7 @@ public class SystemParameters extends AbstractParameters
     public final int edgespace = 100; 
     public final int workNodes = 1;
     
+    //TODO: initialize from config file
     private static SystemParameters instance = new SystemParameters();
        
     public static SystemParameters instance(){

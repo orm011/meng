@@ -1,20 +1,28 @@
 package com.twitter.dataservice.simulated;
 
-import java.rmi.Naming;
-import java.rmi.RMISecurityManager;
-import java.rmi.Remote;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
+
+import com.twitter.dataservice.remotes.IDataNode;
 
 public class WorkNodeMain
 {
     public static void main(String[] argv){
         String name  = argv[0];
+        
         if (System.getSecurityManager() == null)
-            System.setSecurityManager(new RMISecurityManager());
+            System.setSecurityManager(new SecurityManager());
         
         try{
             System.out.printf("Registering work node %s...\n", name);
-            Remote dn = (Remote) new CounterBackedWorkNode();
-            Naming.rebind(name, dn);
+            IDataNode dn = (IDataNode) new CounterBackedWorkNode();
+            IDataNode stub =
+                (IDataNode) UnicastRemoteObject.exportObject(dn, 0);
+            
+            Registry registry = LocateRegistry.createRegistry(1099);
+            
+            registry.rebind(name, stub);
 
             //this message is looked for by a test script, don't change.
             System.out.println("success");

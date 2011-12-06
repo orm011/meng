@@ -11,11 +11,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.twitter.dataservice.remotes.ICompleteWorkNode;
+import com.twitter.dataservice.remotes.IDataNode;
 import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Vertex;
 
-public class CounterBackedWorkNode  extends UnicastRemoteObject implements ICompleteWorkNode
+public class CounterBackedWorkNode implements IDataNode
 {   
     //TODO: will need to keep a dictionary or so to store data
     Counter<Vertex> internalCount = new MapBackedCounter<Vertex>();

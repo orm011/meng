@@ -1,6 +1,6 @@
 package com.twitter.dataservice.simulated;
 
-import com.twitter.dataservice.remotes.ICompleteWorkNode;
+import com.twitter.dataservice.remotes.IDataNode;
 import com.twitter.dataservice.sharding.INodeSelectionStrategy;
 import com.twitter.dataservice.sharding.RoundRobinShardLib;
 import com.twitter.dataservice.sharding.PickFirstNodeShardLib;
@@ -14,6 +14,8 @@ import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -21,12 +23,12 @@ import java.util.concurrent.Executors;
 public class APIServer implements IAPIServer
 {
     //TODO: make it api have interface like an individual node?;
-    Map<Node, ICompleteWorkNode> nodes = new HashMap<Node, ICompleteWorkNode>();
+    Map<Node, IDataNode> nodes = new HashMap<Node, IDataNode>();
     private INodeSelectionStrategy shardinglib = null; // see constructor
 
     //everything runs in one process
-    public static APIServer apiWithGivenWorkNodes(List<? extends ICompleteWorkNode> givenNodes){
-        Map<Node, ICompleteWorkNode> nodes = new HashMap<Node, ICompleteWorkNode>(givenNodes.size());
+    public static APIServer apiWithGivenWorkNodes(List<? extends IDataNode> givenNodes){
+        Map<Node, IDataNode> nodes = new HashMap<Node, IDataNode>(givenNodes.size());
         
         for (int i = 0; i < givenNodes.size(); i++){
                 nodes.put(new Node(i), givenNodes.get(i));
@@ -37,17 +39,24 @@ public class APIServer implements IAPIServer
     
     //using RMI for multiple processes, assumes the other processes have been started
     //and have registered
-    public static APIServer apiWithRemoteWorkNodes(String[] dataNodeNames){
-        Map<Node, ICompleteWorkNode> nodes = new HashMap<Node, ICompleteWorkNode>(dataNodeNames.length);
+    public static APIServer apiWithRemoteWorkNodes(String[] dataNodeNames, String[] dataNodeAddress, String[] dataNodePort){
+        Map<Node, IDataNode> nodes = new HashMap<Node, IDataNode>(dataNodeNames.length);
         
         try {            
-            for (String name: dataNodeNames){
-                System.out.printf("looking up node %s\n", name);
-                //getting node names from command line args. I assume they are
-                //named in a word + number way (eg node1 node2 node4, then I identify them as 1 2 4 internally)
-                ICompleteWorkNode remote = (ICompleteWorkNode) Naming.lookup(name);
+            for (int i = 0; i < dataNodeNames.length; i++){
+                String name = dataNodeNames[i];
+                String address = dataNodeAddress[i];
+                int port = Integer.valueOf(dataNodePort[i]);
+                
+                System.out.printf("looking up node: %s\n", name);
+                Registry reg = LocateRegistry.getRegistry(address, port);
+                IDataNode remote = (IDataNode) reg.lookup(name);
+                System.out.println("got remote reference: " + remote);
+                //Naming.lookup(name);
+                
                 int id = Integer.parseInt(name.substring(name.split("[0-9]+", 0)[0].length(), name
                     .length()));
+                
                 Node local = new Node(id);
                 nodes.put(local, remote);
                 
@@ -58,14 +67,12 @@ public class APIServer implements IAPIServer
             throw new RuntimeException(e);
         } catch (NotBoundException e){
             throw new RuntimeException(e);
-        } catch (MalformedURLException e){
-            throw new RuntimeException(e);
         } 
         
         return new APIServer(nodes);
     }
 
-    private APIServer(Map<Node, ICompleteWorkNode> nodes){
+    private APIServer(Map<Node, IDataNode> nodes){
         this.nodes = nodes;
         shardinglib = new PickFirstNodeShardLib(new TwoTierHashSharding(new ArrayList<Vertex>(), new ArrayList<Node>(nodes.keySet()), 5, 0, 0), null);        
     }
@@ -82,7 +89,9 @@ public class APIServer implements IAPIServer
 
         return result;        
     }
-
+//TODO later: put the #nodes in system in the constructor arg.
+    ExecutorService executor = Executors.newFixedThreadPool(1);
+    
     public Collection<Vertex> getFanout(Vertex v) {
       Collection<Node> destinations = shardinglib.getNodes(v);
       Collection<Vertex> ans = null;
@@ -110,16 +119,19 @@ public class APIServer implements IAPIServer
         }
     }   
     
-    //TODO: move this. Right now this tests whether the RMI works and prints to see 
-    //if results make sense.
-    public static void main(String[] args){
-        APIServer api = APIServer.apiWithRemoteWorkNodes(args);
-        System.out.println("about to request...");
-        Edge mark1 = api.getEdge(new Vertex(1), new Vertex(2));
-        System.out.println(mark1);
+    public static void main(String[] args){ 
+        if (args.length != 3) {
+            System.out.println("usage: name address port");
+            System.exit(1);
+        }
         
-        Collection<Vertex> vertices = api.getFanout(new Vertex(1));
-        System.out.println(vertices);
+        String name = args[0];
+        String address = args[1];
+        String port = args[2];
+        
+        System.out.println("about to bind...");
+        APIServer api = APIServer.apiWithRemoteWorkNodes(new String[]{name}, new String[]{address}, new String[]{port});
+        System.out.println("total load: " + api.totalLoad());
     }
 
     @Override
@@ -127,5 +139,21 @@ public class APIServer implements IAPIServer
     {
         // TODO Auto-generated method stub
         return null;
+    }
+    
+    
+    //TODO: unit test?
+    public int totalLoad(){
+        int total = 0;
+        for (IDataNode n: nodes.values()){
+            try
+            {
+                total += n.totalLoad();
+            } catch (RemoteException e)
+            {
+                throw new RuntimeException(e);
+            }
+        }        
+        return total;
     }
 }

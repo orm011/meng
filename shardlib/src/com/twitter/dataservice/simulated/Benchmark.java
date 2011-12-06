@@ -13,9 +13,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.twitter.dataservice.shardutils.Edge;
-import com.twitter.dataservice.simulated.parameters.GraphParameters;
-import com.twitter.dataservice.simulated.parameters.SystemParameters;
-import com.twitter.dataservice.simulated.parameters.WorkloadParameters;
+import com.twitter.dataservice.parameters.GraphParameters;
+import com.twitter.dataservice.parameters.SystemParameters;
+import com.twitter.dataservice.parameters.WorkloadParameters;
 
 public class Benchmark {
 //    # (Milestone 1.1) Finish framework (< 1 unit)
@@ -32,15 +32,26 @@ public class Benchmark {
         //TODO: read some logname marker string from the config as well. will help in selecting all the logs 
         // for analysis. 
         //TODO: make plot optional 
-        PropertyConfigurator.configure("log4j.properties");
+        if (args.length != 2){
+            System.out.println("usage: logPropertyFile benchmarkPropertyFile");
+            System.exit(1);
+        }
+        
+        String logPropertyFile = args[0];
+        String benchmarkPropertyFile = args[1];
+//        
+//        String remoteObjectName = args[2];
+//        String remoteNodeAddress = args[3];
+//        String remoteNodePortString = args[4];
+        
+        PropertyConfigurator.configure(logPropertyFile);
         logger = org.slf4j.LoggerFactory.getLogger(Benchmark.class);
         
-
         Properties prop = new Properties();
         
         try
         {
-            prop.load(new FileInputStream("Benchmark.properties"));
+            prop.load(new FileInputStream(benchmarkPropertyFile));
         } catch (FileNotFoundException e)
         {
             throw new RuntimeException(e);
@@ -75,7 +86,17 @@ public class Benchmark {
         System.out.println(wp);
         System.out.println(SystemParameters.instance());
         
-        String[] nodes; //TODO also read nodenames from config file, and construct system params using that.
+        //int numNodes = Integer.parseInt(prop.getProperty("workNodeNumber"));
+        //2 nodes
+ 
+        String node1 = prop.getProperty("node1");
+        String node2 = prop.getProperty("node2");
+        
+        String[] names = {"node1", "node2"};
+        String[] addresses = {node1, node2};
+        String[] ports = {"1099", "1099"};
+         
+        //TODO also read nodenames from config file, and construct system params using that.
         //IAPIServer apiServer = APIServer.apiWithRemoteWorkNodes(nodes); 
         IAPIServer apiServer;
 //        try
@@ -89,7 +110,7 @@ public class Benchmark {
 //            throw new RuntimeException();
 //        }
         
-        apiServer = APIServer.apiWithRemoteWorkNodes(new String[]{"node0"});
+        apiServer = APIServer.apiWithRemoteWorkNodes(names, addresses, ports);
         runBenchmark(gp, wp, apiServer);
         
         //TODO: get rid of vestigial 'maxDegree', figure what RMI names we need and how to parse them.
@@ -104,7 +125,6 @@ public class Benchmark {
       IAPIServer api = new LatencyTrackingAPIServer(apiServer, omc);      
       
       Iterator<Edge> it = graph.graphIterator();
-
       omc.begin();
       
       //log degrees for auditing later
@@ -113,7 +133,7 @@ public class Benchmark {
       System.out.println("\n");
       System.out.println("done logging graph");
       
-      int i = 0;
+      int i = 0;    
       while (it.hasNext()){
           apiServer.putEdge(it.next());
           i++;

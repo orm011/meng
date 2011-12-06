@@ -32,13 +32,7 @@ public class TwoTierHashSharding implements ISharding
 
   IShardPrimitives state; //not sure about this reference.
   
-  
-  //Methods to keep state up to date across all shardlibs. (todo later)
-  //sets up the local state based the given zkState (initialization)
-  public TwoTierHashSharding(IShardPrimitives zkState){
-      //
-  }
-  
+
   public TwoTierHashSharding(List<Vertex> exceptions, List<Node> nodes, int numShards, int numShardsPerException, int numNodesPerException){
       List<Token> commonShards = Token.splitFullTokenSpace(Token.DEFAULT_PREFIX_LENGTH, numShards);
       CycleIterator<Node> nodeIt = new CycleIterator<Node>(nodes, nodes.iterator());

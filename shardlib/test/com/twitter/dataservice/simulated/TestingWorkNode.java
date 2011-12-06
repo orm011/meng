@@ -6,7 +6,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import com.twitter.dataservice.remotes.ICompleteWorkNode;
+import com.twitter.dataservice.remotes.IDataNode;
 import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Vertex;
 
@@ -16,7 +16,7 @@ import com.twitter.dataservice.shardutils.Vertex;
  * assumes no concurrent clients for now
  */
 
-public class TestingWorkNode implements ICompleteWorkNode
+public class TestingWorkNode implements IDataNode
 {
     private Counter<Class> counter = new MapBackedCounter<Class>(0);
     private int numEdges = 0;

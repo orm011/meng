@@ -11,8 +11,8 @@ import junit.framework.Assert;
 import org.junit.Test;
 import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Vertex;
-import com.twitter.dataservice.simulated.parameters.GraphParameters;
-import com.twitter.dataservice.simulated.parameters.WorkloadParameters;
+import com.twitter.dataservice.parameters.GraphParameters;
+import com.twitter.dataservice.parameters.WorkloadParameters;
 
 
 

@@ -4,10 +4,10 @@ package com.twitter.dataservice.simulated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.twitter.dataservice.shardutils.Vertex;
-import com.twitter.dataservice.simulated.parameters.AbstractParameters;
-import com.twitter.dataservice.simulated.parameters.GraphParameters;
-import com.twitter.dataservice.simulated.parameters.SystemParameters;
-import com.twitter.dataservice.simulated.parameters.WorkloadParameters;
+import com.twitter.dataservice.parameters.AbstractParameters;
+import com.twitter.dataservice.parameters.GraphParameters;
+import com.twitter.dataservice.parameters.SystemParameters;
+import com.twitter.dataservice.parameters.WorkloadParameters;
 
 public abstract class BasicCollector implements MetricsCollector
 {

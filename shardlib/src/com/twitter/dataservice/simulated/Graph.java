@@ -2,7 +2,7 @@ package com.twitter.dataservice.simulated;
 
 import java.util.Iterator;
 import com.twitter.dataservice.shardutils.Edge;
-import com.twitter.dataservice.simulated.parameters.WorkloadParameters;
+import com.twitter.dataservice.parameters.WorkloadParameters;
 
 public interface Graph
 {

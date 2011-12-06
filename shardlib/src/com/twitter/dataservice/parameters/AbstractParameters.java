@@ -1,4 +1,4 @@
-package com.twitter.dataservice.simulated.parameters;
+package com.twitter.dataservice.parameters;
 
 import java.util.List;
 import java.util.Map;

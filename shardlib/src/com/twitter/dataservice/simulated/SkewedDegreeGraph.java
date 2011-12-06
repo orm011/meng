@@ -3,36 +3,19 @@
  */
 package com.twitter.dataservice.simulated;
 
-import java.awt.Container;
-import java.awt.Font;
-import java.util.ArrayList;
+
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Random;
-
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-
+ 
 import org.apache.commons.math.MathException;
 import org.apache.commons.math.distribution.ZipfDistributionImpl;
 
-import com.jrefinery.chart.Axis;
-import com.jrefinery.chart.AxisNotCompatibleException;
-import com.jrefinery.chart.DefaultCategoryDataSource;
-import com.jrefinery.chart.HorizontalNumberAxis;
-import com.jrefinery.chart.JFreeChart;
-import com.jrefinery.chart.JFreeChartPanel;
-import com.jrefinery.chart.Plot;
-import com.jrefinery.chart.VerticalNumberAxis;
-import com.jrefinery.chart.XYDataSource;
-import com.jrefinery.chart.XYPlot;
-import com.jrefinery.util.ui.Swing;
 import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Vertex;
-import com.twitter.dataservice.simulated.parameters.GraphParameters;
-import com.twitter.dataservice.simulated.parameters.WorkloadParameters;
+import com.twitter.dataservice.parameters.GraphParameters;
+import com.twitter.dataservice.parameters.WorkloadParameters;
 
 //graph generation class, using the zipf distribution idea, and not really faithfully generating the graph, but only the degrees
 public class SkewedDegreeGraph implements Graph {

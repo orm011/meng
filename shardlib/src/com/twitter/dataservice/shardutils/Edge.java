@@ -3,7 +3,7 @@ package com.twitter.dataservice.shardutils;
 import java.io.ByteArrayOutputStream;
 import java.io.Serializable;
 
-import com.twitter.dataservice.simulated.parameters.SystemParameters;
+import com.twitter.dataservice.parameters.SystemParameters;
 
 public class  Edge implements Serializable
 {

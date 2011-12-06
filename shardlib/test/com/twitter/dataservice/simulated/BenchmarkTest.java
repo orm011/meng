@@ -14,8 +14,8 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 import org.junit.Test;
 
-import com.twitter.dataservice.simulated.parameters.GraphParameters;
-import com.twitter.dataservice.simulated.parameters.WorkloadParameters;
+import com.twitter.dataservice.parameters.GraphParameters;
+import com.twitter.dataservice.parameters.WorkloadParameters;
 
 
 public class BenchmarkTest
@@ -78,7 +78,7 @@ public class BenchmarkTest
         } catch (FileNotFoundException e)
         {
             e.printStackTrace();
-        } catch (IOException e)
+        } catch (IOException e)     
         {
             e.printStackTrace();
         }
