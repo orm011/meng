@@ -32,6 +32,17 @@ public class TwoTierHashSharding implements ISharding
 
   IShardPrimitives state; //not sure about this reference.
   
+  //NOTE: only meant to be used right now to test the parallelism of the system
+  //this basically assumes nodes 0 - numExceptions -1 are exceptions, makes sense if these are sorted or by #edges.
+  //hard coded the number of shards
+  static public TwoTierHashSharding makeTwoTierHashFromNumExceptions    (int numExceptions, List<Node> nodes, int numShards, int numShardsPerException, int numNodesPerException){
+      List<Vertex> exceptions = new ArrayList<Vertex>(numExceptions);
+      for (int i = 0; i < numExceptions; i++){
+          exceptions.add(new Vertex(i));
+      }
+      
+      return new TwoTierHashSharding(exceptions, nodes, numShards,numShardsPerException, numNodesPerException);      
+  }
 
   public TwoTierHashSharding(List<Vertex> exceptions, List<Node> nodes, int numShards, int numShardsPerException, int numNodesPerException){
       List<Token> commonShards = Token.splitFullTokenSpace(Token.DEFAULT_PREFIX_LENGTH, numShards);

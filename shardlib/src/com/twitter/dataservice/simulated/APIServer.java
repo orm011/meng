@@ -17,8 +17,12 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 
 public class APIServer implements IAPIServer
 {
@@ -26,20 +30,22 @@ public class APIServer implements IAPIServer
     Map<Node, IDataNode> nodes = new HashMap<Node, IDataNode>();
     private INodeSelectionStrategy shardinglib = null; // see constructor
 
-    //everything runs in one process
+//    //everything runs in one process
+//    //no longer useful? or keep for testing? (test break if I remove it)
     public static APIServer apiWithGivenWorkNodes(List<? extends IDataNode> givenNodes){
         Map<Node, IDataNode> nodes = new HashMap<Node, IDataNode>(givenNodes.size());
         
         for (int i = 0; i < givenNodes.size(); i++){
                 nodes.put(new Node(i), givenNodes.get(i));
         }
-        
-        return new APIServer(nodes);
+        TwoTierHashSharding sh = TwoTierHashSharding.makeTwoTierHashFromNumExceptions(0, new ArrayList<Node>(nodes.keySet()), 5, 0, 0);
+        return new APIServer(nodes, new PickFirstNodeShardLib(sh, null));
     }
     
     //using RMI for multiple processes, assumes the other processes have been started
     //and have registered
-    public static APIServer apiWithRemoteWorkNodes(String[] dataNodeNames, String[] dataNodeAddress, String[] dataNodePort){
+    //the 'numVertices' argument is temporary
+    public static APIServer apiWithRemoteWorkNodes(String[] dataNodeNames, String[] dataNodeAddress, String[] dataNodePort, int numVertices){
         Map<Node, IDataNode> nodes = new HashMap<Node, IDataNode>(dataNodeNames.length);
         
         try {            
@@ -55,7 +61,7 @@ public class APIServer implements IAPIServer
                 //Naming.lookup(name);
                 
                 int id = Integer.parseInt(name.substring(name.split("[0-9]+", 0)[0].length(), name
-                    .length()));
+                        .length()));
                 
                 Node local = new Node(id);
                 nodes.put(local, remote);
@@ -68,13 +74,22 @@ public class APIServer implements IAPIServer
         } catch (NotBoundException e){
             throw new RuntimeException(e);
         } 
+
         
-        return new APIServer(nodes);
+        //TODO:push this out to the beginning of benchmark? (it has parameters I have not yet exposed but should, starting with the type)
+        TwoTierHashSharding sh = TwoTierHashSharding.makeTwoTierHashFromNumExceptions(numVertices, new ArrayList<Node>(nodes.keySet()), 40, 2, 2);
+        INodeSelectionStrategy shardinglib = new PickFirstNodeShardLib(sh, null);        
+        return new APIServer(nodes, shardinglib);
     }
 
-    private APIServer(Map<Node, IDataNode> nodes){
+    
+    //TODO: make api server take shardling lib (construct that first?)
+    //TODO: make shardling lib take parameters: #shards, etc.
+    //TODO: figure out how to not repeat work 
+    
+    private APIServer(Map<Node, IDataNode> nodes, INodeSelectionStrategy shardinglib){
         this.nodes = nodes;
-        shardinglib = new PickFirstNodeShardLib(new TwoTierHashSharding(new ArrayList<Vertex>(), new ArrayList<Node>(nodes.keySet()), 5, 0, 0), null);        
+        this.shardinglib = shardinglib;       
     }
 
     public Edge getEdge(Vertex v, Vertex w){
@@ -89,23 +104,51 @@ public class APIServer implements IAPIServer
 
         return result;        
     }
-//TODO later: put the #nodes in system in the constructor arg.
-    ExecutorService executor = Executors.newFixedThreadPool(1);
     
-    public Collection<Vertex> getFanout(Vertex v) {
-      Collection<Node> destinations = shardinglib.getNodes(v);
-      Collection<Vertex> ans = null;
-
-      try{
-        //TODO: make calls parallel
-        for (Node n : destinations){
-            ans = nodes.get(n).getFanout(v);
+    //TODO later: put the #nodes in system in the constructor arg.
+    ExecutorService executor = Executors.newFixedThreadPool(2);
+     
+    public static class FanoutTask implements Callable<Collection<Vertex>> {
+        IDataNode rn;
+        Vertex v;
+        
+        public FanoutTask(IDataNode rn, Vertex v){
+            this.rn = rn;
+            this.v = v;
         }
         
-      } catch (RemoteException re){
-          throw new RuntimeException(re);
-      }
+        @Override
+        public Collection<Vertex> call() throws Exception
+        {   
+            return rn.getFanout(v);
+        }
+        
+    };
+    
+    //TODO: test correctness of parallel version
+    public Collection<Vertex> getFanout(Vertex v) {
+        
+      Collection<Node> destinations = shardinglib.getNodes(v);
+      Collection<Vertex> ans = new LinkedList<Vertex>();
 
+      List<Future<Collection<Vertex>>> futures = new LinkedList<Future<Collection<Vertex>>>();
+        //TODO: make calls parallel
+      for (Node n : destinations){
+            futures.add(executor.submit(new FanoutTask(nodes.get(n), v)));
+      } 
+      
+      for (Future<Collection<Vertex>> ft: futures){
+          try {
+              ans.addAll(ft.get());
+          } catch (InterruptedException e)
+          {
+              throw new RuntimeException(e);
+          } catch (ExecutionException e)
+          {
+              throw new RuntimeException(e);
+          }
+      }
+        
       return ans;
     }
 
@@ -130,7 +173,7 @@ public class APIServer implements IAPIServer
         String port = args[2];
         
         System.out.println("about to bind...");
-        APIServer api = APIServer.apiWithRemoteWorkNodes(new String[]{name}, new String[]{address}, new String[]{port});
+        APIServer api = APIServer.apiWithRemoteWorkNodes(new String[]{name}, new String[]{address}, new String[]{port}, 1);
         System.out.println("total load: " + api.totalLoad());
     }
 

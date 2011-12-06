@@ -110,7 +110,7 @@ public class Benchmark {
 //            throw new RuntimeException();
 //        }
         
-        apiServer = APIServer.apiWithRemoteWorkNodes(names, addresses, ports);
+        apiServer = APIServer.apiWithRemoteWorkNodes(names, addresses, ports, gp.getNumberVertices());
         runBenchmark(gp, wp, apiServer);
         
         //TODO: get rid of vestigial 'maxDegree', figure what RMI names we need and how to parse them.
