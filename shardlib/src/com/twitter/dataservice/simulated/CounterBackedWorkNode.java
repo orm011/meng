@@ -20,10 +20,6 @@ public class CounterBackedWorkNode implements IDataNode
     //TODO: will need to keep a dictionary or so to store data
     Counter<Vertex> internalCount = new MapBackedCounter<Vertex>();
     
-    public CounterBackedWorkNode() throws RemoteException
-    {
-        super();
-    }
 
     @Override
     public Edge getEdge(Vertex left, Vertex right) throws RemoteException
@@ -31,7 +27,7 @@ public class CounterBackedWorkNode implements IDataNode
         //we don't check if it is there, to not have to keep track.
         //we assume the shardling lib did a good job of directing the request.
         //edges have a payload, check parameters in systemparams.
-        assert internalCount.getCount(left) > 0;
+        if (!(internalCount.getCount(left) > 0)) throw new AssertionError();
         //System.out.println("Edge request");
         return new Edge(left, right);
     }

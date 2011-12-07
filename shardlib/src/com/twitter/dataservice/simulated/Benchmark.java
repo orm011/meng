@@ -5,14 +5,19 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Properties;
 
 import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.twitter.dataservice.remotes.IDataNode;
+import com.twitter.dataservice.sharding.TwoTierHashSharding;
 import com.twitter.dataservice.shardutils.Edge;
+import com.twitter.dataservice.shardutils.Node;
 import com.twitter.dataservice.parameters.GraphParameters;
 import com.twitter.dataservice.parameters.SystemParameters;
 import com.twitter.dataservice.parameters.WorkloadParameters;
@@ -110,7 +115,11 @@ public class Benchmark {
 //            throw new RuntimeException();
 //        }
         
-        apiServer = APIServer.apiWithRemoteWorkNodes(names, addresses, ports, gp.getNumberVertices());
+        Map<Node, IDataNode> nodes = APIServer.getRemoteNodes(names, addresses, ports);
+        
+        TwoTierHashSharding sh = TwoTierHashSharding.makeTwoTierHashFromNumExceptions(gp.getNumberVertices(), nodes, 40, 2, 2);
+        
+        apiServer = APIServer.makeServer(nodes, sh);
         runBenchmark(gp, wp, apiServer);
         
         //TODO: get rid of vestigial 'maxDegree', figure what RMI names we need and how to parse them.

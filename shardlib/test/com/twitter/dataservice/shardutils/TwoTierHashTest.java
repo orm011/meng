@@ -3,9 +3,11 @@ package com.twitter.dataservice.shardutils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -14,6 +16,7 @@ import junit.framework.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.twitter.dataservice.remotes.IDataNode;
 import com.twitter.dataservice.sharding.CycleIterator;
 import com.twitter.dataservice.sharding.SlidingWindowCycleIterator;
 import com.twitter.dataservice.sharding.TwoTierHashSharding;
@@ -282,14 +285,16 @@ public class TwoTierHashTest
         return answer;
     }
     
-    private List<Node> generateThisManyNodes(int howMany){
-        List<Node> answer = new ArrayList<Node>(howMany);
-     
+    private Map<Node, IDataNode> generateThisManyNodes(int howMany){
+        Map<Node, IDataNode> nodes = new HashMap<Node, IDataNode>(howMany);
+        
+        //TODO: this is only useful for its keys, but need to obey the types, 
+        //and I don't want to revert/change that atm.
         for (int i = 0; i < howMany; i++){
-            answer.add(i, new Node(i));
+            nodes.put(new Node(i), null);
         }        
         
-        return answer;
+        return nodes;
     }
     
     private List<Edge> generateAllEdgeCombinations(List<Vertex> vertices){

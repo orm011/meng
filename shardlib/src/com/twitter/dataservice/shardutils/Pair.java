@@ -27,10 +27,10 @@ public class Pair<L,R>
     }
     
     @Override public int hashCode(){
-        return (getLeft().hashCode() & 0xFFFF0000) + (getRight().hashCode() & 0xFFFF);
+        return (getLeft().hashCode() * 31) + (getRight().hashCode());
     }
     
     @Override public String toString(){
-        return "Pair: Left: " + getLeft().toString() + " Right: " + getRight().toString();
+        return "Pair: " + getLeft().toString() + " " + getRight().toString();
     }
 }

@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import com.twitter.dataservice.remotes.IDataNode;
 import com.twitter.dataservice.shardutils.*;
 
 //most basic sharding. edge goes to  a Token.
@@ -22,9 +23,7 @@ public class TwoTierHashSharding implements ISharding
   }
   
   //TODO: move these things, and system parameters into single location read from external file.
-  private final static int DEFAULT_NUMSHARDS = 1000;
   private final static int DEFAULT_EXCEPTION_TIER_SPLIT = 2;
-  private final static int DEFAULT_EXCEPTION_TIER_NUM_NODES = 2;
   
   SortedMap<Token,Node> shards = new TreeMap<Token, Node>();
 
@@ -35,7 +34,7 @@ public class TwoTierHashSharding implements ISharding
   //NOTE: only meant to be used right now to test the parallelism of the system
   //this basically assumes nodes 0 - numExceptions -1 are exceptions, makes sense if these are sorted or by #edges.
   //hard coded the number of shards
-  static public TwoTierHashSharding makeTwoTierHashFromNumExceptions    (int numExceptions, List<Node> nodes, int numShards, int numShardsPerException, int numNodesPerException){
+  static public TwoTierHashSharding makeTwoTierHashFromNumExceptions(int numExceptions, Map<Node, IDataNode> nodes, int numShards, int numShardsPerException, int numNodesPerException){
       List<Vertex> exceptions = new ArrayList<Vertex>(numExceptions);
       for (int i = 0; i < numExceptions; i++){
           exceptions.add(new Vertex(i));
@@ -44,9 +43,10 @@ public class TwoTierHashSharding implements ISharding
       return new TwoTierHashSharding(exceptions, nodes, numShards,numShardsPerException, numNodesPerException);      
   }
 
-  public TwoTierHashSharding(List<Vertex> exceptions, List<Node> nodes, int numShards, int numShardsPerException, int numNodesPerException){
+  public TwoTierHashSharding(List<Vertex> exceptions, Map<Node, IDataNode> nodes, int numShards, int numShardsPerException, int numNodesPerException){
+      List<Node> keys = new ArrayList<Node>(nodes.keySet());
       List<Token> commonShards = Token.splitFullTokenSpace(Token.DEFAULT_PREFIX_LENGTH, numShards);
-      CycleIterator<Node> nodeIt = new CycleIterator<Node>(nodes, nodes.iterator());
+      CycleIterator<Node> nodeIt = new CycleIterator<Node>(keys, keys.iterator());
       
       //put all common shards, assign nodes to them in round robin way
       for (Token tk: commonShards){

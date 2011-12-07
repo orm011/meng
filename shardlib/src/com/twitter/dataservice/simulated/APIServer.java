@@ -2,6 +2,7 @@ package com.twitter.dataservice.simulated;
 
 import com.twitter.dataservice.remotes.IDataNode;
 import com.twitter.dataservice.sharding.INodeSelectionStrategy;
+import com.twitter.dataservice.sharding.ISharding;
 import com.twitter.dataservice.sharding.RoundRobinShardLib;
 import com.twitter.dataservice.sharding.PickFirstNodeShardLib;
 import com.twitter.dataservice.sharding.TwoTierHashSharding;
@@ -30,22 +31,25 @@ public class APIServer implements IAPIServer
     Map<Node, IDataNode> nodes = new HashMap<Node, IDataNode>();
     private INodeSelectionStrategy shardinglib = null; // see constructor
 
-//    //everything runs in one process
-//    //no longer useful? or keep for testing? (test break if I remove it)
+    //needed cause of existing test
     public static APIServer apiWithGivenWorkNodes(List<? extends IDataNode> givenNodes){
         Map<Node, IDataNode> nodes = new HashMap<Node, IDataNode>(givenNodes.size());
         
         for (int i = 0; i < givenNodes.size(); i++){
                 nodes.put(new Node(i), givenNodes.get(i));
         }
-        TwoTierHashSharding sh = TwoTierHashSharding.makeTwoTierHashFromNumExceptions(0, new ArrayList<Node>(nodes.keySet()), 5, 0, 0);
+        TwoTierHashSharding sh = TwoTierHashSharding.makeTwoTierHashFromNumExceptions(0, nodes, 5, 0, 0);
         return new APIServer(nodes, new PickFirstNodeShardLib(sh, null));
     }
     
-    //using RMI for multiple processes, assumes the other processes have been started
-    //and have registered
-    //the 'numVertices' argument is temporary
-    public static APIServer apiWithRemoteWorkNodes(String[] dataNodeNames, String[] dataNodeAddress, String[] dataNodePort, int numVertices){
+    
+    //can be used so everything runs in a single process. note sharding already depends on the nodes (needs to be consistent)
+    public static APIServer makeServer(Map<Node, IDataNode> nodes, ISharding sharding){
+        INodeSelectionStrategy shardinglib = new PickFirstNodeShardLib(sharding, null);        
+        return new APIServer(nodes, shardinglib);
+    }
+    
+    public static Map<Node, IDataNode> getRemoteNodes(String[] dataNodeNames, String[] dataNodeAddress, String[] dataNodePort){
         Map<Node, IDataNode> nodes = new HashMap<Node, IDataNode>(dataNodeNames.length);
         
         try {            
@@ -73,16 +77,11 @@ public class APIServer implements IAPIServer
             throw new RuntimeException(e);
         } catch (NotBoundException e){
             throw new RuntimeException(e);
-        } 
-
+        }
         
-        //TODO:push this out to the beginning of benchmark? (it has parameters I have not yet exposed but should, starting with the type)
-        TwoTierHashSharding sh = TwoTierHashSharding.makeTwoTierHashFromNumExceptions(numVertices, new ArrayList<Node>(nodes.keySet()), 40, 2, 2);
-        INodeSelectionStrategy shardinglib = new PickFirstNodeShardLib(sh, null);        
-        return new APIServer(nodes, shardinglib);
+        return nodes;
     }
-
-    
+        
     //TODO: make api server take shardling lib (construct that first?)
     //TODO: make shardling lib take parameters: #shards, etc.
     //TODO: figure out how to not repeat work 
@@ -171,10 +170,12 @@ public class APIServer implements IAPIServer
         String name = args[0];
         String address = args[1];
         String port = args[2];
-        
+        //TODO: correct
         System.out.println("about to bind...");
-        APIServer api = APIServer.apiWithRemoteWorkNodes(new String[]{name}, new String[]{address}, new String[]{port}, 1);
-        System.out.println("total load: " + api.totalLoad());
+        System.exit(1);
+        //TODO: change to use new interface
+        //APIServer api = APIServer.apiWithRemoteWorkNodes(new String[]{name}, new String[]{address}, new String[]{port}, 1);
+        //System.out.println("total load: " + api.totalLoad());
     }
 
     @Override
