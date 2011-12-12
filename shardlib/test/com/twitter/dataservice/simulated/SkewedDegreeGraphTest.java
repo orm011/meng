@@ -1,15 +1,20 @@
 package com.twitter.dataservice.simulated;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import junit.framework.Assert;
 
 import org.junit.Test;
+
+
 import com.twitter.dataservice.shardutils.Edge;
+import com.twitter.dataservice.shardutils.TwoTierHashTest;
 import com.twitter.dataservice.shardutils.Vertex;
 import com.twitter.dataservice.parameters.GraphParameters;
 import com.twitter.dataservice.parameters.WorkloadParameters;
@@ -146,4 +151,30 @@ public class SkewedDegreeGraphTest
         Assert.assertTrue(work.next() instanceof Query.FanoutQuery);
         Assert.assertEquals(new Vertex(0), ((Query.FanoutQuery) nx).v);
     }
+    
+    /*
+     * checks setting ratio of 1 makes all vertices have the same degree.
+     */
+    @Test
+    public void testConstantGraph(){
+        
+       for (int i = 1; i < 20; i++){
+           GraphParameters gp = new GraphParameters.Builder()
+               .degreeBoundAndTargetAvg(1, 1 << i)
+               .numberVertices(100)
+               .degreeSkew(1.0)
+               .build();
+           
+           SkewedDegreeGraph g = SkewedDegreeGraph.makeSkewedDegreeGraph(gp);
+           Iterator<Edge> git = g.graphIterator();
+           MapBackedCounter<Vertex> counter = new MapBackedCounter<Vertex>();
+           
+           while (git.hasNext()) {
+               counter.increaseCount(git.next().getLeftEndpoint());
+           }
+           
+           TwoTierHashTest.assertBalanced((1 << i)*100, 100, 0.0, counter);
+       }
+    }
+        
 }

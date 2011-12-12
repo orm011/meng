@@ -5,8 +5,11 @@
 %for i in $(ls); do cat $i | grep GraphParameters | awk '{print $NF}' > $i.skews; done
 %rm *.temp.skews
 
-lats = ls("*.temp")
-sks = ls("*.skews")
+
+path=argv(){1};
+
+lats = ls([path, "*.temp"])
+sks = ls([path, "*.nodes"])
 
 assert(size(lats,1) == size(sks,1),"number of files does not match") %sanity
 
@@ -20,9 +23,7 @@ for i=1:size(lats,1)
   fopen(lats(i,:),"r");
   dta = fscanf(fopen(lats(i,:), "r"), "%d");
   stats(i,:) = quantile(dta, quantile_positions);
-  skew_vals(i,:) = fscanf(fopen(sks(i,:), "r"), "%f")/1000; %remember to modify
-  %assert(length(sks) == 1, "expected only one skew number"); 
-  %skew_vals(i) = sks(1);
+  skew_vals(i,:) = fscanf(fopen(sks(i,:), "r"), "%d"); %remember to modify for skew
 end
 
 disp(stats)
@@ -32,10 +33,10 @@ data = sortrows([skew_vals, stats], 1)
 
 hold on;
 for i=2:size(data,2)
-	semilogx(data(:,1), data(:,i), 'bo-')
+	plot(data(:,1), data(:,i), 'o-')
 end
 
-xlabel('(log scale) edges per node'); %'skew parameter'
+xlabel('nodes in system'); %nodes
 ylabel('latency in micro sec');
 
 sleep(1);

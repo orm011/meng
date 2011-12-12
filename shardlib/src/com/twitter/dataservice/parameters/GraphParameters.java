@@ -17,11 +17,10 @@ public class GraphParameters extends AbstractParameters {
     //numberEdges is a function of our target average  and num Vertices.
         
     //NOTE: don't change this without changing existing config files as well.
-    public static final String MAXDEGREE = "graph.maxDegree"; //TODO: get rid of 
+    public static final String DEGREE_RATIO_BOUND = "graph.degreeRatioBound";  
     public static final String AVERAGE_DEGREE = "graph.averageDegree";
     public static final String SKEW_PARAMETER = "graph.degreeSkew";
     public static final String NUMBER_VERTICES = "graph.numberVertices";
-    public static final String NUMBER_EDGES = "graph.numberEdges"; //TODO: get rid of
     
     private final int numberVertices;
     private final int numberEdges;
@@ -31,7 +30,6 @@ public class GraphParameters extends AbstractParameters {
 
     
     public int getNumberEdges(){
-        //TODO: assert build() has been called or get rid
         return this.numberEdges;
     }
     
@@ -66,8 +64,8 @@ public class GraphParameters extends AbstractParameters {
     public List<Map.Entry<String, Object>> fields(){
         Map<String,Object> temp = new LinkedHashMap<String,Object>();
         temp.put(NUMBER_VERTICES, numberVertices);
-        temp.put(NUMBER_EDGES, numberEdges); //TODO: replace with avg degree
-        temp.put(MAXDEGREE, upperDegreeBound); //note this is no longer used, TODO: remove
+        temp.put(AVERAGE_DEGREE, average);
+        temp.put(DEGREE_RATIO_BOUND, upperDegreeBound);
         temp.put(SKEW_PARAMETER, degreeSkewParameter);
         
         return new LinkedList<Map.Entry<String, Object>>(temp.entrySet());

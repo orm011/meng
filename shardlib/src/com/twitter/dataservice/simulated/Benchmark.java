@@ -1,8 +1,10 @@
 package com.twitter.dataservice.simulated;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
@@ -23,16 +25,9 @@ import com.twitter.dataservice.parameters.SystemParameters;
 import com.twitter.dataservice.parameters.WorkloadParameters;
 
 public class Benchmark {
-//    # (Milestone 1.1) Finish framework (< 1 unit)
-//
-//    1. parallelizing shard requests within an api request
-//    2. figuring out discrepancy in latency vs degree graph (ensure enough "work" is being done)
 
     static org.slf4j.Logger logger;
-    
-    static {
-    }
-    
+        
     public static void main(String[] args) {
         //TODO: read some logname marker string from the config as well. will help in selecting all the logs 
         // for analysis. 
@@ -44,19 +39,27 @@ public class Benchmark {
         
         String logPropertyFile = args[0];
         String benchmarkPropertyFile = args[1];
-//        
-//        String remoteObjectName = args[2];
-//        String remoteNodeAddress = args[3];
-//        String remoteNodePortString = args[4];
         
         PropertyConfigurator.configure(logPropertyFile);
-        logger = org.slf4j.LoggerFactory.getLogger(Benchmark.class);
+        
+        logger = org.slf4j.LoggerFactory.getLogger(Benchmark.class);        
         
         Properties prop = new Properties();
         
         try
         {
             prop.load(new FileInputStream(benchmarkPropertyFile));
+            
+            //copy the properties file as a whole int stdio and the log.
+            BufferedReader properties = new BufferedReader(new FileReader(new File(benchmarkPropertyFile)));
+            String current;
+            while ((current = properties.readLine()) != null){
+                System.out.println(current);
+                logger.debug(current);
+            }
+            
+            System.out.println();
+            
         } catch (FileNotFoundException e)
         {
             throw new RuntimeException(e);
@@ -64,10 +67,12 @@ public class Benchmark {
         {
             throw new RuntimeException(e);
         }
-               
+
+        
+        //set up graph
         GraphParameters gp = new GraphParameters.Builder()
         .degreeBoundAndTargetAvg(
-                Integer.parseInt(prop.getProperty(GraphParameters.MAXDEGREE)), 
+                Integer.parseInt(prop.getProperty(GraphParameters.DEGREE_RATIO_BOUND)), 
                 Integer.parseInt(prop.getProperty(GraphParameters.AVERAGE_DEGREE)))
         .degreeSkew(
                 Double.parseDouble(prop.getProperty(GraphParameters.SKEW_PARAMETER)))
@@ -75,7 +80,7 @@ public class Benchmark {
                 Integer.parseInt(prop.getProperty(GraphParameters.NUMBER_VERTICES))).
         build();
         
-        
+        //set up workload
         WorkloadParameters wp = new WorkloadParameters.Builder()
         .numberOfQueries(
                 Integer.parseInt(prop.getProperty(WorkloadParameters.NUMBER_OF_QUERIES)))
@@ -86,46 +91,62 @@ public class Benchmark {
         .skew(
                 Double.parseDouble(prop.getProperty(WorkloadParameters.QUERY_SKEW)))
         .build();
+
+        //reset system params
+        int numNodes = Integer.parseInt(prop.getProperty(SystemParameters.NUM_DATA_NODES));
+        int edgeWeight = Integer.parseInt(prop.getProperty(SystemParameters.PER_EDGE_WEIGHT));
+        SystemParameters.reset(edgeWeight, numNodes);
         
+        //print all parsed params
         System.out.println(gp);
         System.out.println(wp);
         System.out.println(SystemParameters.instance());
+        System.out.println();
         
-        //int numNodes = Integer.parseInt(prop.getProperty("workNodeNumber"));
-        //2 nodes
+        //init shardlib, apiServer
+        String[] names = new String[numNodes];
+        String[] address = new String[numNodes];
+        String[] ports = new String[numNodes];        
+        for (int i = 0; i < numNodes; i++){
+            names[i] = "node" + i;
+            String nodeAddress = prop.getProperty(names[i]);
+            if (nodeAddress == null) throw new IllegalArgumentException();
+
+            String[] addressWithPort = nodeAddress.split(":");
+            address[i] = addressWithPort[0];
+            ports[i] = addressWithPort[1];
+        }
+        
+        int numOrdinaryShards = Integer.parseInt(prop.getProperty(NUM_ORDINARY_SHARDS));
+        int numShardsPerException; // = Integer.parseInt(prop.getProperty(NUM_SHARDS_PER_EXCEPTION));
+        int numNodesPerException; // = Integer.parseInt(prop.getProperty(NUM_EXCEPTIONS));
+        int numExceptions; // = Integer.parseInt(prop.getProperty(NUM_EXCEPTIONS));
  
-        String node1 = prop.getProperty("node1");
-        String node2 = prop.getProperty("node2");
+        //NOTE: remove this for longer term experiments. for now this is reasonable
+        numShardsPerException = SystemParameters.instance().numDataNodes;
+        numNodesPerException = SystemParameters.instance().numDataNodes;
+        numExceptions = gp.getNumberVertices();
         
-        String[] names = {"node1", "node2"};
-        String[] addresses = {node1, node2};
-        String[] ports = {"1099", "1099"};
-         
-        //TODO also read nodenames from config file, and construct system params using that.
-        //IAPIServer apiServer = APIServer.apiWithRemoteWorkNodes(nodes); 
-        IAPIServer apiServer;
-//        try
-//        {
-////            apiServer = APIServer.apiWithGivenWorkNodes(Arrays.asList(
-////                                new CounterBackedWorkNode[]{new CounterBackedWorkNode()}));
-//        
-//        } catch (RemoteException e)
-//        {
-//            // TODO Auto-generated catch block    
-//            throw new RuntimeException();
-//        }
+        //TODO: sanity check sharding is splitting things reasonably evenly and log relative sizes.
+        Map<Node, IDataNode> nodes = APIServer.getRemoteNodes(names, address, ports);
+        TwoTierHashSharding sh = TwoTierHashSharding.makeTwoTierHashFromNumExceptions(
+                numExceptions, 
+                nodes, 
+                numOrdinaryShards, 
+                numShardsPerException, 
+                numNodesPerException);
         
-        Map<Node, IDataNode> nodes = APIServer.getRemoteNodes(names, addresses, ports);
+        IAPIServer apiServer = APIServer.makeServer(nodes, sh);        
         
-        TwoTierHashSharding sh = TwoTierHashSharding.makeTwoTierHashFromNumExceptions(gp.getNumberVertices(), nodes, 40, 2, 2);
-        
-        apiServer = APIServer.makeServer(nodes, sh);
         runBenchmark(gp, wp, apiServer);
-        
-        //TODO: get rid of vestigial 'maxDegree', figure what RMI names we need and how to parse them.
         System.exit(0);
     }
-        
+    
+    public static final String NUM_ORDINARY_SHARDS = "sharding.numOrdinaryShards";
+    public static final String NUM_SHARDS_PER_EXCEPTION = "sharding.numShardsPerException";
+    public static final String NUM_NODES_PER_EXCEPTION = "sharding.numNodesPerException";
+    public static final String NUM_EXCEPTIONS = "sharding.numExceptions";
+    
     public static void runBenchmark(GraphParameters graphParams, WorkloadParameters workloadParams, IAPIServer apiServer){
         
       Graph graph = SkewedDegreeGraph.makeSkewedDegreeGraph(graphParams); //TODO: change this
@@ -157,54 +178,5 @@ public class Benchmark {
       
       omc.finish();
       System.out.println("done. log saved at: \n" + TimestampNameFileAppender.getLogName());
-//
-//      //reform this, we don't need it every time. but it may be useful to check basic behaviors
-//      ProcessBuilder degreePlotting = new ProcessBuilder(
-//              new String[]{
-//                      "./plot.sh", 
-//                      "--degree",  
-//                      "foo", //placeholder, will delete soon
-//                      String.valueOf(graphParams.getUpperDegreeBound()*1.2), //maxx
-//                      String.valueOf(graphParams.getNumberVertices()/4), //maxy
-//                      TimestampNameFileAppender.getLogName()})
-//      .directory(new File("./logs"));
-//      
-//      ProcessBuilder latencyPlotting = new ProcessBuilder(
-//              new String[]{
-//                      "./plot.sh", 
-//                      "--latency", 
-//                      "foo", 
-//                      "1000", 
-//                      String.valueOf(7000), 
-//                      TimestampNameFileAppender.getLogName()})
-//      .directory(new File("./logs/"));
-//      
-//      for (String s: degreePlotting.command()){
-//          System.out.printf("%s ", s);
-//      }
-//      
-//      for (String s: latencyPlotting.command()) {
-//          System.out.printf("%s ", s);
-//      }
-//      System.out.println("\n");
-//      
-// //     try
-////      {
-//////          Process p = degreePlotting.start();
-//////          p.waitFor();    
-//////          System.out.println("done with degree plot");
-////          Process q = latencyPlotting.start();
-////          q.waitFor();
-////          
-////          System.out.println("done with latency plot");
-////          q.getOutputStream();
-//      } catch (IOException e)
-//      {
-//          e.printStackTrace();
-//      } catch (InterruptedException e)
-//      {
-//          e.printStackTrace();
-//      }
-
     }   
 }

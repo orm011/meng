@@ -10,22 +10,40 @@ import java.util.Map;
 //but which may need to be changed before settling on a final value.
 public class SystemParameters extends AbstractParameters
 {
-    public final int edgespace = 100; 
-    public final int workNodes = 1;
+    
+    public static final String NUM_DATA_NODES = "system.numDataNodes";
+    public static final String PER_EDGE_WEIGHT = "system.perEdgeWeight";
+    
+    public static final int DEFAULT_EDGE_WEIGHT = 50;
+    public static final int DEFAULT_NUMBER_NODES = 1;
+    
+    private static SystemParameters instance = new SystemParameters(DEFAULT_EDGE_WEIGHT, DEFAULT_NUMBER_NODES);
+    
+    //is this a good idea?
+    //may confuse the two
+    public static void reset(int edgeSize, int numWorkNodes){        
+        instance = new SystemParameters(edgeSize, numWorkNodes);
+    }
+    
+    public final int perEdgeWeight; 
+    public int numDataNodes;
     
     //TODO: initialize from config file
-    private static SystemParameters instance = new SystemParameters();
-       
+    private SystemParameters(int edgeSize, int numWorkNodes){
+        if (edgeSize <= 0 || numWorkNodes <=0) throw new IllegalArgumentException();
+        this.perEdgeWeight = edgeSize;
+        this.numDataNodes = numWorkNodes;
+    }
+    
     public static SystemParameters instance(){
         return instance;
     }
     
     public  List<Map.Entry<String,Object>> fields(){
         HashMap<String, Object> ans = new HashMap<String, Object>();
-        ans.put("edgePayload", edgespace);
-        ans.put("workNodes", workNodes);
+        ans.put(PER_EDGE_WEIGHT, perEdgeWeight);
+        ans.put(NUM_DATA_NODES, numDataNodes);
         
         return new LinkedList<Map.Entry<String,Object>>(ans.entrySet());
     }
-    
 }

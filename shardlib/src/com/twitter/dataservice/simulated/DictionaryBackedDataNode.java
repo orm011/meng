@@ -4,6 +4,7 @@ import java.rmi.RemoteException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -17,6 +18,7 @@ import com.twitter.dataservice.shardutils.Vertex;
 
 /*
  * oscarm's version of redis. 
+ * TODO: how do we make sure there are enough buckets in the hashtable?
  */
 public class DictionaryBackedDataNode implements IDataNode
 {
@@ -25,6 +27,15 @@ public class DictionaryBackedDataNode implements IDataNode
     private final Map<Pair<Vertex, Vertex>, Edge> edges = new HashMap<Pair<Vertex, Vertex>, Edge>();
     private final Map<Vertex, Set<Vertex>> fanouts = new HashMap<Vertex, Set<Vertex>>();
     //TODO: deal with backedges. add a funelin data structure?
+    private final String name;
+    
+    public DictionaryBackedDataNode(String name){
+        this.name = name;
+    }
+    
+    public DictionaryBackedDataNode(){
+        this.name = null;
+    }
     
     @Override
     public Edge getEdge(Vertex left, Vertex right) throws RemoteException
@@ -38,8 +49,13 @@ public class DictionaryBackedDataNode implements IDataNode
     //I guess it must be the actual type. In that case, may want to make a list?
     public Collection<Vertex> getFanout(Vertex v) throws RemoteException
     {
-        Collection<Vertex> ans = fanouts.get(v);
-        if (ans == null) throw new AssertionError();
+        //System.out.println(name + " fanout: " + v);
+        Collection<Vertex> temp = fanouts.get(v);
+        Collection<Vertex> ans = (temp == null) ? new LinkedList<Vertex>() : temp;
+        
+        //not really true: when a node only has a few edges, one of the shard containing 
+        //nodes may have no entries for it, while some other shard nodes do have it.
+        //if (ans == null) ans = new ArrayList<Vertex>();
         return ans;
     }
 
@@ -52,6 +68,7 @@ public class DictionaryBackedDataNode implements IDataNode
     @Override
     public void putEdge(Edge e) throws RemoteException
     {
+        //System.out.println(name + " put: " + e);
         Vertex left = e.getLeftEndpoint();
         Vertex right = e.getRightEndpoint();
         

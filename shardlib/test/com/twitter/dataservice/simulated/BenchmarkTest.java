@@ -44,7 +44,7 @@ public class BenchmarkTest
     // checking java's own property format
     @Test public void propertyTest(){
         Properties prop = new Properties();
-        prop.setProperty(GraphParameters.MAXDEGREE, "200");
+        prop.setProperty(GraphParameters.DEGREE_RATIO_BOUND, "200");
         prop.setProperty(GraphParameters.AVERAGE_DEGREE, "100");
         prop.setProperty(GraphParameters.SKEW_PARAMETER, "1.0");
         prop.setProperty(GraphParameters.NUMBER_VERTICES, "200");

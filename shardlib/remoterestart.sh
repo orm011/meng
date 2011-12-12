@@ -1,0 +1,11 @@
+	ssh smf1-agm-15-sr1 -C 'pkill -9 -f java.*WorkNodeMain'
+	ssh smf1-agn-29-sr1 -C 'pkill -9 -f java.*WorkNodeMain'
+	ssh smf1-agq-31-sr1 -C 'pkill -9 -f java.*WorkNodeMain'
+	ssh smf1-agt-31-sr1 -C 'pkill -9 -f java.*WorkNodeMain'
+	ssh smf1-agm-35-sr1 -C 'pkill -9 -f java.*WorkNodeMain'
+
+ 	ssh smf1-agm-15-sr1 -C 'java -cp ./bin/  -Djava.security.policy=server.policy -Djava.rmi.server.codebase=file:./bin/ com.twitter.dataservice.simulated.WorkNodeMain node0 2>&1 > workNodeLog.log &'
+ 	ssh smf1-agn-29-sr1 -C 'java -cp ./bin/  -Djava.security.policy=server.policy -Djava.rmi.server.codebase=file:./bin/ com.twitter.dataservice.simulated.WorkNodeMain node1 2>&1 > workNodeLog.log &'
+ 	ssh smf1-agq-31-sr1 -C 'java -cp ./bin/  -Djava.security.policy=server.policy -Djava.rmi.server.codebase=file:./bin/ com.twitter.dataservice.simulated.WorkNodeMain node2 2>&1 > workNodeLog.log &'
+ 	ssh smf1-agt-31-sr1 -C 'java -cp ./bin/  -Djava.security.policy=server.policy -Djava.rmi.server.codebase=file:./bin/ com.twitter.dataservice.simulated.WorkNodeMain node3 2>&1 > workNodeLog.log &'
+ 	ssh smf1-agm-35-sr1 -C 'java -cp ./bin/  -Djava.security.policy=server.policy -Djava.rmi.server.codebase=file:./bin/ com.twitter.dataservice.simulated.WorkNodeMain node4 2>&1 > workNodeLog.log &'

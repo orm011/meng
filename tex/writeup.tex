@@ -65,6 +65,20 @@ that people actively try to add the missing edges.  In Twitter, if A follows B a
 so that A follows C. and if A follows B and A visits C, it is mentioned that B follows C, so that again the link A-C is encouraged.
 
 
+Other observations:
+-Optimizing for latency. maximum throughput is a system characteristic. (added, we would do well, in documenting the max throughput) 
+-even if optimizing for latency, if 2 clients can go all their queries in parallel and latency stays the same? can try checking whats the max number
+of clients possible that keep latency low. Can throughput be increased simply by adding more machines? or does communication or a sequential component hinder that.
+-replication effects on latency: assuming replicated backedges diminishes read latency for fanout and fanin queries, but makes a put requests double the work.
+-replicating important  nodes also can speed up queries such as intersections but increase work at write time.
+-
+-(eg. an immutable graph could fit in a single machine, but writes would be impossible)
+-when comparing different methods on reads must make sure not to be making gains based on adding work at write time
+-effect of queries with only partial results on intersection/fanout
+-validation of graph skew correlation with query skew. Are popular users also most likely to tweet often?
+
+
+
 \section{Benchmark design}
 %some sources: \cite{Gray.Benchmark}, \cite{ycsb}, \cite{zipf-systems}
 
@@ -82,6 +96,9 @@ Many vertices, a really heavy one, but queries go to all:
 
 Even degree vertices, evenly spread queries:
 -max possible throughput.
+
+Sampling the graph. \draftnote{cite Leskovec Faloutsos paper. Also remember the other paper about predicting edges, which could be used for a third strategy. This third strategy can be place nodes likely to get edges together}
+
 
 \section{Underview, don't read}
 \begin{enumerate}

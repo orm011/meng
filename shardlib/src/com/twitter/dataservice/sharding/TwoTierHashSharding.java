@@ -21,10 +21,7 @@ public class TwoTierHashSharding implements ISharding
   public int getNumShards(){
       return shards.size();
   }
-  
-  //TODO: move these things, and system parameters into single location read from external file.
-  private final static int DEFAULT_EXCEPTION_TIER_SPLIT = 2;
-  
+    
   SortedMap<Token,Node> shards = new TreeMap<Token, Node>();
 
   final static HierarchicalHashFunction hashfun = new HierarchicalHashFunction();
@@ -33,19 +30,18 @@ public class TwoTierHashSharding implements ISharding
   
   //NOTE: only meant to be used right now to test the parallelism of the system
   //this basically assumes nodes 0 - numExceptions -1 are exceptions, makes sense if these are sorted or by #edges.
-  //hard coded the number of shards
-  static public TwoTierHashSharding makeTwoTierHashFromNumExceptions(int numExceptions, Map<Node, IDataNode> nodes, int numShards, int numShardsPerException, int numNodesPerException){
+  static public TwoTierHashSharding makeTwoTierHashFromNumExceptions(int numExceptions, Map<Node, IDataNode> nodes, int numOrdinaryShards, int numShardsPerException, int numNodesPerException){
       List<Vertex> exceptions = new ArrayList<Vertex>(numExceptions);
       for (int i = 0; i < numExceptions; i++){
           exceptions.add(new Vertex(i));
       }
       
-      return new TwoTierHashSharding(exceptions, nodes, numShards,numShardsPerException, numNodesPerException);      
+      return new TwoTierHashSharding(exceptions, nodes, numOrdinaryShards,numShardsPerException, numNodesPerException);      
   }
 
-  public TwoTierHashSharding(List<Vertex> exceptions, Map<Node, IDataNode> nodes, int numShards, int numShardsPerException, int numNodesPerException){
+  public TwoTierHashSharding(List<Vertex> exceptions, Map<Node, IDataNode> nodes, int numOrdinaryShards, int numShardsPerException, int numNodesPerException){
       List<Node> keys = new ArrayList<Node>(nodes.keySet());
-      List<Token> commonShards = Token.splitFullTokenSpace(Token.DEFAULT_PREFIX_LENGTH, numShards);
+      List<Token> commonShards = Token.splitFullTokenSpace(Token.DEFAULT_PREFIX_LENGTH, numOrdinaryShards);
       CycleIterator<Node> nodeIt = new CycleIterator<Node>(keys, keys.iterator());
       
       //put all common shards, assign nodes to them in round robin way
@@ -69,7 +65,7 @@ public class TwoTierHashSharding implements ISharding
           Token prefix = hashfun.hashVertex(v);
           Pair<Token,Token> ends = hashfun.hash(v);
           Token predecessor = ends.getLeft();
-          List<Token> vertexShards = Token.splitNodeImpliedRange(prefix, TwoTierHashSharding.DEFAULT_EXCEPTION_TIER_SPLIT);
+          List<Token> vertexShards = Token.splitNodeImpliedRange(prefix, numShardsPerException);
           
           shards.put(predecessor, start);
           for (Token tk: vertexShards){
@@ -79,7 +75,7 @@ public class TwoTierHashSharding implements ISharding
   }
   
   
-  //for test purposes TODO: remove this/make private, somehow
+  //@VisibleForTesting
   public TwoTierHashSharding(List<Pair<Token, Node>> shardState){
       if (shardState.size() == 0)
           throw new IllegalArgumentException("system must have at least one shard");
@@ -89,18 +85,6 @@ public class TwoTierHashSharding implements ISharding
       }
   }
   
-  public void applyStateUpdate(IShardUpdate zkUpdate){
-      //applies local state based on a delivered update
-  }
-  
-  //client inits the remote zkState (do we do this any differently from a state update?)
-  public void initRemoteHashSharding(){
-      //takes snapshot of local state and sends it
-  }
-  
-  public void publishStateUpdate(){
-      //sends update to zk (assumes you have applied it/waits for it to come back?/applies it here?)
-  }
   
   //Methods to read the shard state  
   @Override public Pair<Shard,Collection<Node>> getShardForEdgeQuery(Edge  e) {
@@ -177,39 +161,9 @@ public class TwoTierHashSharding implements ISharding
       return null;
   }
 
- //TODO: define thresholds with some basis
-  private final static int PROMOTE_NODE = 200000;
-  private final static int TOLERANCE = 2000;
-  private final static int DEMOTE_NODE = PROMOTE_NODE - TOLERANCE;
-  private final static int REPLICATION_FACTOR = 3;
- 
-  //also temporary
-  private final static int SHARDS_PER_SPECIAL_NODE = 4;
-  //private final static int OPTIMAL_SINGLE_NODE_SHARD_SIZE = PROMOTE_NODE;
-  
-  private void demoteVertex(Vertex v){
-      //update clutch: remove assignments
-      //wait on clutch state update
-      //update local: remove shards from list. 
-      //don't need this for static version
-  }
-  
-  
-  private void promoteVertex(Vertex v){
-      //TODO: later
-      //from clutch update if possible
-      //wait on clutch assignment states update
-      //update local to reflect those changes    
-  }
-  
-  private void internalPromoteVertex(Vertex v){
-      //option 1:
-      // List<Token> parts = Token.split(pt.getLeft(), pt.getRight(), 2);      
-      //TODO: need to figure out way of promting in a way that
-      //keeps balance, so would like to know who else is in charge of a special node.
-      //TODO: shards.put(tk, ??)  how to make it balanced? how to make it alright when new node added?
-      
-      //option 2: pick nodes, hash, use pair (hash(node_i), nodei)
-  }
-  
+  private final static int REPLICATION_FACTOR = 3; 
+  /*
+   * really, probably not useful at this point,
+   * but since it is being used elsewhere (tests etc)
+   */
 }

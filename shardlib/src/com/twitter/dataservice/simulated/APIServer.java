@@ -23,7 +23,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
+
 
 public class APIServer implements IAPIServer
 {
@@ -161,6 +161,7 @@ public class APIServer implements IAPIServer
         }
     }   
     
+    @Deprecated
     public static void main(String[] args){ 
         if (args.length != 3) {
             System.out.println("usage: name address port");

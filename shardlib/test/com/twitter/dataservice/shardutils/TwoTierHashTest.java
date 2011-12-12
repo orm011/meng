@@ -16,10 +16,17 @@ import junit.framework.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.twitter.dataservice.parameters.GraphParameters;
 import com.twitter.dataservice.remotes.IDataNode;
 import com.twitter.dataservice.sharding.CycleIterator;
+import com.twitter.dataservice.sharding.ISharding;
 import com.twitter.dataservice.sharding.SlidingWindowCycleIterator;
 import com.twitter.dataservice.sharding.TwoTierHashSharding;
+import com.twitter.dataservice.simulated.Counter;
+import com.twitter.dataservice.simulated.Graph;
+import com.twitter.dataservice.simulated.MapBackedCounter;
+import com.twitter.dataservice.simulated.SkewedDegreeGraph;
+import com.twitter.dataservice.simulated.SkewedDegreeGraphTest;
 
 public class TwoTierHashTest
 {
@@ -338,8 +345,96 @@ public class TwoTierHashTest
         
         TwoTierHashSharding tths2 = new TwoTierHashSharding(generateThisManyVertices(0), generateThisManyNodes(1), 100000, 0, 0);
         assertEdgeShardConsistentWithVertexShard(tths1, verticesForQuerying);
+    }
+    
+    //tests the sharding lib spreads edges evenly (when there are many edges and relatively few shards)
+    @Test public void testEvenOrdinaryPartition(){        
+        GraphParameters gp = new GraphParameters.Builder()
+        .degreeSkew(100) //basically uniform
+        .numberVertices(100000) // a lot, so that each shard gets to have roughly the same, hopefully
+        .degreeBoundAndTargetAvg(1, 1)
+        .build();
+        
+        int numExceptions = 0;
+        int numOrdinaryShards = 10; //small so that split is even
+        int numNodes = 5; //ditto
+        int numShardsPerException = 0; //shouldn't matter
+        int numNodesPerException = 0; //shouldn'matter
+        //TODO: convert to builder
+        TwoTierHashSharding sharding = TwoTierHashSharding.makeTwoTierHashFromNumExceptions(
+                numExceptions,
+                generateThisManyNodes(numNodes), 
+                numOrdinaryShards, 
+                numShardsPerException, 
+                numNodesPerException);
+        
+        assertBalancedByShardAndByStorageNode(gp, sharding, numOrdinaryShards, numNodes);        
+    }
+    
+    //tests that stuff is spread out evenly within an exceptions' shards
+    @Test public void testEvenExceptionPartition(){
+          
+          GraphParameters gp = new GraphParameters.Builder()
+          .degreeSkew(100) //basically uniform
+          .numberVertices(5)  //not really many vertices needed
+          .degreeBoundAndTargetAvg(1, 100000) // a lot, so that each exception shard gets to have roughly the same
+          .build();
+                    
+          int numExceptions = 5; // a few exceptions
+          int numOrdinaryShards = 1; // compulsory
+          int numShardsPerException = 10;// relatively few compared to number of edges
+          int numNodesPerException = 10;//ditto
+          int numNodes = numNodesPerException; //should be at least as big as numNodesPerException
+          TwoTierHashSharding sharding = TwoTierHashSharding.makeTwoTierHashFromNumExceptions(
+                  numExceptions,
+                  generateThisManyNodes(numNodes), 
+                  numOrdinaryShards, 
+                  numShardsPerException, 
+                  numNodesPerException);
+
+          assertBalancedByShardAndByStorageNode(gp, sharding, numExceptions*numShardsPerException, numNodes);
+      }
+    
+    //TODO: use a parameter class ShardParameters.
+    private void assertBalancedByShardAndByStorageNode(GraphParameters gp, ISharding sharding, int numShards, int numNodes){
+        Graph gr = SkewedDegreeGraph.makeSkewedDegreeGraph(gp);
+        Iterator<Edge> it = gr.graphIterator();
+        
+        MapBackedCounter<Shard> counterByShard = new MapBackedCounter<Shard>();
+        MapBackedCounter<Node> counterByNode = new MapBackedCounter<Node>();
+        while (it.hasNext()){
+            Edge nextEdge = it.next();
+            counterByShard.increaseCount(sharding.getShardForEdgeQuery(nextEdge).getLeft());
+            counterByNode.increaseCount(sharding.getShardForEdgeQuery(nextEdge).getRight().iterator().next());
+        }
+        
+        //these can fail for some parameter combos (eg if they are small), but should 
+        //always succeed given large enough numbers of edges
+        assertBalanced(gp.getNumberEdges(), numShards, 0.1, counterByShard);
+        assertBalanced(gp.getNumberEdges(), numNodes, 0.1, counterByNode);                
+    }
+    
+    //TODO: use general Counter interface
+    public static <T> void assertBalanced(int numParticles, int numBins, double maxSpreadTolerated, MapBackedCounter<T> tally){
+        int min = Integer.MAX_VALUE;
+        int max = Integer.MIN_VALUE;
+    
+        Assert.assertEquals(numBins, tally.entrySet().size());
+        
+        for (Map.Entry<T, Integer> ent: tally.entrySet()){
+            min = Math.min(min, ent.getValue());
+            max = Math.max(max, ent.getValue());
+        }
+        
+        Assert.assertTrue(min > 0);
+        Assert.assertTrue(max >= min);
+        
+        double spread = ((double)(max - min))/min;
+        Assert.assertTrue(spread <= maxSpreadTolerated);
+        Assert.assertEquals(numParticles, tally.getTotal());
         
     }
     
+
 
 }

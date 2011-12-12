@@ -2,7 +2,6 @@ package com.twitter.dataservice.shardutils;
 
 public class Shard implements Comparable<Shard>
 {
-    int id;
     Token upperEndToken;
 
   public Shard(Token upperEndToken) {
@@ -27,6 +26,11 @@ public String toString(){
 @Override
 public boolean equals(Object o){
     return (o != null) && (o instanceof Shard) && upperEndToken.equals(((Shard)o).upperEndToken);
+}
+
+@Override
+public int hashCode(){
+    return upperEndToken.hashCode();
 }
  
 }

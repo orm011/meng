@@ -32,8 +32,8 @@ public class CounterBackedWorkNodeTest
             Assert.assertEquals(0, cbwn.totalLoad());
             
             try {
-            cbwn.getFanout(v);
-            Assert.fail();
+                cbwn.getFanout(v);
+                Assert.fail();
             } catch (AssertionError e){;}
             
         

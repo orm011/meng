@@ -48,7 +48,7 @@ if [[ $1 == --latency ]]
 then
 echo 'latencyplot'
 cat $FILE | grep $QUERYDATA | awk '{print $7}' |\
-octave --silent plot_latency.m "$SYSTEM" "$GRAPH" "$WORKLOAD" 'latency (nanos)' 'latency histogram' $MAXX $MAXY
+octave --silent plot_latency.m "$SYSTEM" "$GRAPH" "$WORKLOAD" 'latency (musec)' 'latency histogram' $MAXX $MAXY
 else
 if [[ $1 == --throughput ]]
 then
