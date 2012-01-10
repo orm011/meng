@@ -1,0 +1,7 @@
+(some scripts, graph snapshot copy)
+smf1-agm-35-sr1
+(master for benchmarks)
+smf1-agn-11-sr1
+
+hadoop machines/hdfs:
+-forward edges, flock logs

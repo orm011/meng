@@ -18,3 +18,7 @@ so ~ 1GB. not sure why it is actually about 10x that.
 Scary part is that at the benchmark server I see this:
 38292 oscarm    17   0 18.6g  17g 9356 S 584.0 24.5 710:34.49 java
 why is it 17g? thats insane. why is the benchmark/api server so full.
+
+
+dataset at:
+smfc-ail-06-sr1.corpdc.twitter.com

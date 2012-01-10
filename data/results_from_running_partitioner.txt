@@ -1,0 +1,46 @@
+[oscarm@smfc-aih-20-sr1 tmp]$ time gpmetis query_graph.graph 5 &
+[1] 10346
+[oscarm@smfc-aih-20-sr1 tmp]$ ps
+  PID TTY          TIME CMD
+10346 pts/99   00:00:00 bash
+10347 pts/99   00:00:01 gpmetis
+10348 pts/99   00:00:00 ps
+48076 pts/99   00:00:00 bash
+[oscarm@smfc-aih-20-sr1 tmp]$ ******************************************************************************
+METIS 5.0 Copyright 1998-11, Regents of the University of Minnesota
+ (HEAD: , Built on: Dec 16 2011, 04:13:06)
+ size of idx_t: 32bits, real_t: 32bits, idx_t *: 64bits
+
+Graph Information -----------------------------------------------------------
+ Name: query_graph.graph, #Vertices: 127046986, #Edges: 692314, #Parts: 5
+
+Options ---------------------------------------------------------------------
+ ptype=kway, objtype=cut, ctype=shem, rtype=greedy, iptype=metisrb
+ dbglvl=0, ufactor=1.030, minconn=NO, contig=NO, nooutput=NO
+ seed=-1, niter=10, ncuts=1
+
+Direct k-way Partitioning ---------------------------------------------------
+ - Edgecut: 45073, communication volume: 44413.
+
+ - Balance:
+     constraint #0:  1.030 out of 0.015
+
+ - Most overweight partition:
+     pid: 1, actual: 416768112, desired: 404733184, ratio: 1.03.
+
+ - Subdomain connectivity: max: 4, min: 3, avg: 3.60
+
+ - The original graph had 126455830 connected components and the resulting
+   partitioning after removing the cut edges has 126460599 components.
+Timing Information ----------------------------------------------------------
+  I/O:			  24.689 sec
+  Partitioning: 	  	  34961.531 sec   (METIS time)
+  Reporting:    		  	      13.860 sec
+
+Memory Information ----------------------------------------------------------
+  Max memory used:	 8036.424 MB
+******************************************************************************
+
+real	583m25.281s
+user	582m42.678s
+sys	0m37.525s

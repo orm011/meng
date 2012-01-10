@@ -1,0 +1,14 @@
+gunzip </tmp/forward_edges.gz |  sort -k1,1n -k2,2n -S 18G > /tmp/forward_resorted2.txt & 40241
+time gunzip </tmp/sorted_forward.txt.gz | sort -k2,2n -k1,1n -S 18G > /tmp/backward_resorted.txt  13118 agm-35
+
+gunzip </tmp/backward_edges.gz | wc > backward_unsorted_count.txt &
+cat backward_unsorted_count.txt 
+5306800261 10613600522 97796041265
+
+gunzip < /tmp/forward_edges.gz | wc > forward_27G_count.txt
+cat /tmp/forward_27G_count.txt 
+5306800261 10613600522 97796041265
+
+wc /tmp/second_try_back.txt > wc_second_try_back.txt &
+cat wc_second_try_back.txt 
+5306800261 10613600522 97796041265 /tmp/second_try_back.txt

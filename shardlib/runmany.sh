@@ -19,9 +19,13 @@ shift
 CP='./bin/:./lib/commons-math-2.2.jar:./lib/junit-4.10.jar:./lib/log4j-1.2.16.jar:./lib/slf4j-api-1.6.4.jar:./lib/slf4j-log4j12-1.6.4.jar'
 FLAGS='-Djava.security.policy=server.policy -Djava.rmi.server.codebase=file:./bin/'
 
-#DEGREE="10000 30000 100000 300000 1000000"
-DEGREE="10000 20000 40000 80000 160000 320000 640000 1280000"
-PARALLEL="5 4 3 2 1"
+VAR1="system.numDataNodes"
+VAR1VALS="5 1"
+echo $VAR1: $VAR1VALS
+
+VAR2="graph.degreeSkew"
+VAR2VALS="0.1 1.0 3.0"
+echo $VAR2: $VAR2VALS
 
 LOGPROP="log4j.temp.properties"
 BENCHPROP="Benchmark.temp.properties"
@@ -29,23 +33,22 @@ BENCHPROP="Benchmark.temp.properties"
 cp log4j.properties $LOGPROP
 cp Benchmark.properties $BENCHPROP
 
-echo 'using base properties:'
-cat Benchmark.properties
-cat log4j.temp.properties
-
-echo $DEGREE
-for d in $DEGREE
+for d in $VAR1VALS
 do
-echo "now doing graph.averageDegree=$d"
-sed "s/graph.averageDegree=.*/graph.averageDegree=$d/" Benchmark.properties > $BENCHPROP
+echo "now doing $VAR1=$d"
+sed "s/$VAR1=.*/$VAR1=$d/" Benchmark.properties > $BENCHPROP
 
-for p in $PARALLEL
+for p in $VAR2VALS
 do
-echo "with system.numDataNodes=$p"
+echo "with $VAR2=$p"
 #must do sed with replacement to not lose both changes
-sed -i.sedtmp "s/system.numDataNodes=.*/system.numDataNodes=$p/" $BENCHPROP
-sed "s/log4j.appender.R.File=logs\/saved.log/log4j.appender.R.File=logs\/$KEYWORD\/$KEYWORD-degree-$d-parallel-$p.log/" log4j.properties > $LOGPROP
-(time java -cp $CP $FLAGS com.twitter.dataservice.simulated.Benchmark $LOGPROP $BENCHPROP) 2>> $KEYWORD.times 1>> $KEYWORD.out
+sed -i.sedtmp "s/$VAR2=.*/$VAR2=$p/" $BENCHPROP
+sed "s/log4j.appender.R.File=logs\/saved.log/log4j.appender.R.File=logs\/$KEYWORD\/$VAR1-$d\/$KEYWORD-$VAR1-$d-$VAR2-$p.log/" log4j.properties > $LOGPROP
+cat $BENCHPROP | grep -v "^#"
+cat $LOGPROP | grep 'R.File'
+time java -cp $CP $FLAGS com.twitter.dataservice.simulated.Benchmark $LOGPROP $BENCHPROP
+echo '--------------'
 done
 
 done
+

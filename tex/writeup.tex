@@ -21,6 +21,7 @@
 
 \bibliographystyle{alpha}
 
+
 \section{Overview}
 
 There are three main types of operations expected of the graph store, or a graph store in general. One is querying for edge data {\code getEdge(v,w)}, another one is for fan-out {\code getFanout(v)}, another for intersections of the neighbrohoods of two nodes {\code getIntersection(v,w)}. There is also a tentative random walk one that I am yet to actually look into.  A real workload is made of a mix of these queries, but  I am thinking of  partitioning strategies by starting with one of the operations and thinking backward to something that would improve their performance. For that reason, the benchmarks I have in mind are: 100\% \edgeq, 100\% \fanoutq, 100\% \intersectq and a mix
@@ -51,6 +52,29 @@ This thesis presents three sections. The first is the design of three strategies
 
 \section{background and reading}
 
+Physical Database Design Decision Algorithms and
+Concurrent Reorganization for
+Parallel Database Systems
+by
+Daniel C. Zilio -- proposes a particular search algorithm (some kind of branch and bound)
+-- but also gives overview of approaches and 
+-- more general than the single graph case (multiple tables)
+--TODO: look up what it says about something like the many to many Twitter queries
+
+
+Parallel static and dynamic
+multi-constraint graph
+partitioning‡
+Kirk Schloegel∗,†, George Karypis and Vipin Kumar
+--graph partitioning algorithms (both static and dynamic repartitioning) as used in graphical mesh partitioning.
+
+---Notes on partitioning the Graph:
+Tried partitioning. Challenges 
+1: getting to the required format. The job ran as desired but the parity of the # edges was not right. (roughly good though)
+2: METIS cannot handle more than 2^32 edges apparently, so it chokes on my 7Billion+ edges graph
+3: PROBABLY metis cannot handle a graph of that size.
+
+
 (paper of Newman and Park) Why social networks differ from other types of networks:
 bascially two ways: positive degree correlation between neighbors is one feature, and higher than random clustering is the other.
 In a social network, if a node has high degree then its neighbors are more likely to also have  high degree. 
@@ -66,23 +90,108 @@ so that A follows C. and if A follows B and A visits C, it is mentioned that B f
 
 
 Other observations:
+
+-load may also be ameliorated by reading from the safety replicas we already have to make anyway.
+-When we hash partition by u in (u,v), all edge queries for  u go to the same node, so edge query performance may deteriorate?
+(counterargument: popular nodes will be spread across machines). So its not about one machine taking too long necessarily, but
+about the query taking long in a single machine, when all queries could be done faster if we parallelize.
+
+
 -Optimizing for latency. maximum throughput is a system characteristic. (added, we would do well, in documenting the max throughput) 
 -even if optimizing for latency, if 2 clients can go all their queries in parallel and latency stays the same? can try checking whats the max number
 of clients possible that keep latency low. Can throughput be increased simply by adding more machines? or does communication or a sequential component hinder that.
 -replication effects on latency: assuming replicated backedges diminishes read latency for fanout and fanin queries, but makes a put requests double the work.
 -replicating important  nodes also can speed up queries such as intersections but increase work at write time.
--
 -(eg. an immutable graph could fit in a single machine, but writes would be impossible)
 -when comparing different methods on reads must make sure not to be making gains based on adding work at write time
 -effect of queries with only partial results on intersection/fanout
--validation of graph skew correlation with query skew. Are popular users also most likely to tweet often?
+-validation of graph skew correlation with query skew. Are popular users also most likely to tweet often?  In the case of files,
+the sizes are power law distributed, but this skew is not correlated with file access popularity. (Graph Structure of the Web by Broder).
+In the case of social graphs, correlation would be: lady gaga and the like tweet the most (validate) this seems unlikely (only 1000 used)
+On the other 
+
+-replication in a graph of this type (eg facebook) if we replicate stuff 5 hops away, we replicate a lot of the graph, it is not even possible.
+This kind of connectivity property of the graph has real system consequences.   
+
+-queries that are looking for a graph pattern (follows is one, but there can be more complicated ones)
+-queries that look for all the matches to one patter, as opposed to  a unique nodes.
+
+-Other properties: triangles are more likely to exist.
+
+Other exploration: (from Madden)
+-profile the latency involved in a single fanout query, check where time is spent.
+-make a cost model of the system as a function of #nodes, degree. determine when it is profitable to split.
+-learn the cost model parameters from the data, then get optimal from that and the model.
+-define the random walk operation. eg take in 1 node. and return a dictionary of other nodes/relative weights.
+-is the random walk operaton more like an analitic query ('get random walk for everyone')
+
+-can generate full graph with forwards and backwards edge without remembering it (just remembering the counts)
+ (this will be useful for generating actual graphs)
+
+problems:
+-finding a good partition:
+graph based (pujol paper), workload based partitioning (schism), 
+
+-implementing directory:
+hash function (control), best effort cache (madden paper), compressed/degraded table (trees), 
+
+-make approach robust to update:
+see survey of methods for repartitioning
+pujol etal. use heursitics to make incremental changes to the graph as inserts happen.
+SCHISM is less robust in this case and does not seem to address how to repartition.
+
+-Pujol paper on social graph partitioning techniques: (Divide and conquer: partitioning online social networks)
+
+Social graphs are different from other graphs in several ways: degree skew, 'assortative mixing' (in this case high degree tends to link to high degree), 
+stronger clustering.
+There is also some geolocality. people who identify with a certain locality tend to have edges to other people of that sort. (explore further) (assortativity)
+Traffic properties: mostly one hop. fanouts and conversations. 
+Idea: an algorithm that captures 'social closeness' in some sense, should score well in both 'fanout' costs and
+conversations across the network. As well as follows graph edges.
+Comparison: METIS, MO+ (modularity objective expanded to restrict the imbalances in sizes of natural communities)
+
+Interestingly, natural communities tend to have a skewed size distribution as well, so trying to partition by community needs to deal 
+with this skewed property of graphs.  MO+ does this by recursively splitting large modules. 
+
+Results.  GP comm cost performance declines sharply as # of partitions increases. Imbalance is slightly higher.
+MO+ remains better in terms of both comm cost and load imbalance.
+Random is by far worst in com cost and rapidly drops too, but very little imbalance.
+
+Karypis paper on METIS limitations for social graphs:
+
+Typical heuristic for metis is you have a graph, you generate a matching and coarsen. 
+To generate a matching, normally they will rank edges in some way and then go through them, adding them 
+as long as they remain a matching. For ranking, weights are useful. (heavy edge matching)
+With social networks, the degree skew is such that the coarsening will not progress much. 
+(Example: star). So they improve performance by modifying the coarsening stage. 1) they relax the requirement it be an actual
+matching (conversely they limit the size of clusters) 2) they define a different ranking function. (based on stuff including graph related info)
+in that way, they improve the coarsening phase. (cannot find a way of using it for my own though)x
+
+
+The Little Engines that Could. (also by Pujol)
+
+
+All three suggested performance metrics are well aligned.
 
 
 
 \section{Benchmark design}
 %some sources: \cite{Gray.Benchmark}, \cite{ycsb}, \cite{zipf-systems}
 
+The zipf distribution is widely used as a valuable tool in benchmarking because of its natural emergence in a variety of applications. (refer to YCSB, gray paper, newman paper, huberman and Adamic: 
+Zipf’s law and the Internet) Its existence complicates things for partitioning BUT helps make caching possible. We also exploit this empirical feature in our system.
+
+Generating it takes work.
+
 It is expected that splitting a heavy node \( A \)  decreases latency for a \fanoutq[ A ] query, due to its parallel execution.  But it is also clear the amount of work and resources to use remain at about the same (or worse, given the extra communication).  Such a system, when compared to a different one that keeps all edges \( \left(A, * \right) \) in the same storage node  will nontheless perform with higher throughput under a load of repeated \fanoutq[A] calls, since it is a single node processing all of them.  On the other hand, on under a load of \fanoutq{*} queries where the argument varies uniformly over different nodes $A$, $B$, ... The more evenly this happens, the more uniform the load is spread. Hence, under this workload the throughput would be very similar for both systems.    
+
+Sampling a log involves sampling a graph. (really?) why not just sample the log and then define the graph from there? need to think about this.
+But, starting witha  subset of the graph to use,  is also hard.
+Sampling methodology:graph needs to be sampled in a way that preserves properties relevant to system performance (other than scale). Turns out sampling a graph while keeping all these properties
+representative is not easy. (Leskovec paper). We used a historical graph for that same reason.
+
+Then we sample by making each individual machine (60) log desired number of queries/ 60. Assumes each machine is getting a similar amount of queries over time, which seems to be the case.
+Timestamps included. to validate that.
 
 \draftnote{I could/should  write an explitic model for these simple scenarios, it would make it clearer and improve this from its current prose}
 
@@ -98,6 +207,111 @@ Even degree vertices, evenly spread queries:
 -max possible throughput.
 
 Sampling the graph. \draftnote{cite Leskovec Faloutsos paper. Also remember the other paper about predicting edges, which could be used for a third strategy. This third strategy can be place nodes likely to get edges together}
+
+\subsection{Graph Partitioning}
+
+-Generate METIS format graph from query log.
+metis solves: 'minimize crossed edges subject to balanced partitions'
+whats the weight of a partition? sum of vertex weights
+What do we want to balance:
+-information per server (number of edges)
+-load per server (based on log?). make vertex weights be: social graph degree, #queries, 
+-METIS graph edges are: frequency of intersection ocurrences.
+-(note METRIS graph degree is # intersection queries involving the node)
+
+Run partitioning algorithm.
+
+load (empirical? or some other) graph based on partitioning information from file.
+
+control: hash by edges, hash by vertex. comparison: two-tier.
+-use real workload on real graph.
+
+synthetic?:
+-parallelization vs location.
+-change query skew? the larger the skew in the queries
+the 
+
+
+-other ideas:
+-effect of this strategy on fanouts /edges? -
+-effect of limit queries? -
+-another approach: insted of reacting, place edges together that will tend to have edges in the future. (how does this contrast with putting the ones together that already have them?)
+I think they mention this either in the SCHISM or the Lookup Tables paper.
+
+- how about using the multiweight of the graph  to balance #fanouts queries as well as #edges.
+
+\section{real data description}
+
+Real graph 16B edges, 500M vertices.
+max 16 million followers, median 60 followers.
+\
+Benchmark graph: 6B edges, 130 vertices
+Query patterns:  (see files)
+
+Workload:
+~10 million different Ids in the queries, vast diversity in the fanouts part.
+fanouts 9 million. intersection/edge, 1 million.
+the intersection query graph has only about 1.3 million.
+
+Skews (see files).
+
+emails citations
+Data model details:
+
+Edge metadata is stored in Redis hashes. An edge A->B is stored with key = A, field = B and value = N bytes metadata (configurable). Userids are 32 bit integers encoded into a fixed length byte[] (start at 100M, increase sequentially). Edge metadata is a byte buffer, each byte is Byte.MAX_VALUE. hash-max-zipmap-value is fixed at 64.
+
+Indexes are stored as userid -> sorted_set(adjacent_userids). Sort key is an int64 timestamp in millis. Index keys have a 1 byte prefix to distinguish from hash keys, so are 5 bytes each.
+
+This time I also used a more realistic 70-20-10 query distribution for getMetadata(A), getFollowers(A) and getFollowings(A) rather than just the (cheaper) getMetadata(A) that I used last time.
+
+16K qps
+0.6ms (avg), 1ms (99%), 2ms (99.9%), 4ms (99.99%)
+
+72K qps
+0.7ms (avg), 2ms (99%), 2ms (99.9%), 4ms (99.99%)
+
+136K qps
+0.7ms (avg), 3ms (99%), 5ms (99.9%), 10ms (99.99%)
+
+-------------
+
+Most of our performance benchmarking so far has been for short durations, i.e. stretches of a few minutes at a time. Also, the workloads have been reads only. So I conducted a new test that ran for 72 hours and had the following request distribution (which we believe to be realistic): getEdgeMetadata (67%), getFollowings (15%), getFollowers (8%) and writes (10%). The writes had a 50-50 distribution of addNewEdge and deleteEdge operations. The operations transactionally updated the Redis edge metadata hash as well as follower index sorted set.
+
+This test used a 72G RAM server machine running 20 Redis instances and a client machine on a different rack running a Java client talking directly to the Redis instances. The client ran with 85 threads to drive a workload of 130K-150K qps. Here is a summary of the latency/throughput:
+
+Total queries: 36266319360
+Total time (seconds): 259200
+Qps: 139916
+Latencies (ms) [99%, 99.9%, 99.99%]: 1 3 4
+
+Note that these latencies include the write operations. Full latency distribution is available in the log file at nest1.corp.twitter.com:/home/rvp/redis_multi_day for those curious. 
+
+Conclusion: results we saw earlier hold up over the long duration tests as well as with read/write workloads.
+
+sum of histogram:
+5305208505
+
+wc in_edges.txt: 99883011  199766022 1172068249 in_edges.txt
+
+wc out_edges.txt: 115814616  231629232 1390216278 out_edges.txt
+
+done marker:
+[ 08-50_05-Sep-2010 248 ] Crawled #idsBlocks = 187084 maxNodeId = 187083288 #nodes = 115814616 #edges = 5306800261 #exceptions = 1493 #id_blocks_given_up = 0 in 170 minutes [CRAWL_FINISHED]
+
+avg. 48
+
+Follow graph today:
+16B edges.
+out degree: 2.1
+in degree: 1.8
+2M > 1k edges
+
+
+2nd degree: follows of follows. 10 nodes > 1B paths
+50k nodes > 100 M paths
+
+\todonote{fill in with actual operation proportions.}
+
 
 
 \section{Underview, don't read}
