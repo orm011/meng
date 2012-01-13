@@ -1,6 +1,7 @@
 package com.twitter.dataservice.simulated;
 
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -24,8 +25,8 @@ public class DictionaryBackedDataNode implements IDataNode
 {
     //consistency condition: there is an edge (u, v) for every v in fanout(u)
     //note the edge object also contains the pair.
-    private final Map<Pair<Vertex, Vertex>, Edge> edges = new HashMap<Pair<Vertex, Vertex>, Edge>();
-    private final Map<Vertex, Set<Vertex>> fanouts = new HashMap<Vertex, Set<Vertex>>();
+    private final Map<Pair<Integer, Integer>, byte[]> edges = new HashMap<Pair<Integer, Integer>, byte[]>();
+    private final Map<Integer, List<Integer>> fanouts = new HashMap<Integer, List<Integer>>();
     //TODO: deal with backedges. add a funelin data structure?
     private final String name;
     
@@ -40,23 +41,26 @@ public class DictionaryBackedDataNode implements IDataNode
     @Override
     public Edge getEdge(Vertex left, Vertex right) throws RemoteException
     {
-        Edge ans = edges.get(new Pair<Vertex, Vertex>(left, right));
+        Edge ans = new Edge(left.getId(), right.getId(), edges.get(new Pair<Integer, Integer>(left.getId(), right.getId())));
         if (ans == null) throw new AssertionError();
         return ans;
     }
 
-    @Override //TODO: how does RMI choose the type of collection, if Collection is abstract?
-    //I guess it must be the actual type. In that case, may want to make a list?
+    @Override
     public Collection<Vertex> getFanout(Vertex v) throws RemoteException
     {
-        //System.out.println(name + " fanout: " + v);
-        Collection<Vertex> temp = fanouts.get(v);
-        Collection<Vertex> ans = (temp == null) ? new LinkedList<Vertex>() : temp;
         
-        //not really true: when a node only has a few edges, one of the shard containing 
-        //nodes may have no entries for it, while some other shard nodes do have it.
-        //if (ans == null) ans = new ArrayList<Vertex>();
-        return ans;
+        System.out.println("fanout: " + v);
+        Collection<Integer> out = fanouts.get(v.getId());
+        
+        Collection<Vertex> temp = new ArrayList<Vertex>();
+        
+        for (Integer id: out){
+            System.out.println(id);
+            temp.add(new Vertex(id));
+        }
+        
+        return temp;
     }
 
     @Override
@@ -68,22 +72,22 @@ public class DictionaryBackedDataNode implements IDataNode
     @Override
     public void putEdge(Edge e) throws RemoteException
     {
-        //System.out.println(name + " put: " + e);
+        System.out.println(name + " put: " + e);
         Vertex left = e.getLeftEndpoint();
         Vertex right = e.getRightEndpoint();
         
-        Pair<Vertex, Vertex> p = new Pair<Vertex, Vertex>(left, right);
+        Pair<Integer, Integer> p = new Pair<Integer, Integer>(left.getId(), right.getId());
         
         //update edges structure
         assert !edges.containsKey(p);
-        edges.put(p, e);
+        edges.put(p, e.payload);
         
         //update fanout structure
-        if (!fanouts.containsKey(left)){
-            fanouts.put(left, new HashSet<Vertex>());
+        if (!fanouts.containsKey(left.getId())){
+            fanouts.put(left.getId(), new ArrayList<Integer>());
         }
         
-        fanouts.get(left).add(right);        
+        fanouts.get(left.getId()).add(right.getId());        
     }
 
     @Override
