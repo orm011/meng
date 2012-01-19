@@ -43,7 +43,7 @@ public class WorkNodeMain
                 String name = namefile.split("-")[0];
                 
                 System.out.printf("Registering work node %s...\n", name);
-                IDataNode dn = new DictionaryBackedDataNode(name);
+                CompactDataNode dn = new CompactDataNode(3100);
                 nodes.add(dn);
                 IDataNode stub =
                     (IDataNode) UnicastRemoteObject.exportObject(dn, 0);
@@ -72,17 +72,29 @@ public class WorkNodeMain
         }
   }
     
-   public static void loadFromLocal(String fileName, IDataNode node){
+    /*
+     * only available for CompactDataNode because we put fanout arrays directly into node.
+     */
+   public static void loadFromLocal(String fileName, CompactDataNode node){
        try
     {
         BufferedReader bfr = new BufferedReader(new FileReader(fileName));
         String line;
         while ((line = bfr.readLine()) != null){
             String[] elts = line.split("\t");
-            int leftid = Integer.parseInt(elts[1]);
-            int rightid = Integer.parseInt(elts[2]);
+            int leftid = Integer.parseInt(elts[0]);
             
-            node.putEdge(new Edge(new Vertex(leftid), new Vertex(rightid)));
+            //System.out.println(leftid);
+            //System.out.println(elts[1]);
+            String[] fanoutstring= elts[1].split(" ");
+            int[] fanouts = new int[fanoutstring.length];
+            int i = 0;
+            for (String num: fanoutstring){
+                fanouts[i] = Integer.parseInt(num);
+                i++;
+            }
+
+            node.putFanout(leftid, fanouts);
         }  
     } catch (FileNotFoundException e)
     {

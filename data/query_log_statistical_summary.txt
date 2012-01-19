@@ -1,6 +1,5 @@
-smf1-agm-35-sr1
-
 log stats:
+note that the simple query and intersection etc. queries use a page size and page offset argument, so some operations may logically be the same.
 sed 's/[(|)]//g' results.txt | sed 's/,/ /' | sort -k 2nr | awk 'BEGIN {total=0} {total+=$2; print $1,100*$2/384412936, 100*total/384412936}' 
 SimpleQuery 98.0922 98.0922
 SimpleQuery_SimpleQuery_Intersection 1.10557 99.1978
@@ -14,6 +13,7 @@ SimpleQuery_SimpleQuery_Union 0.0273851 100
 cat *  | awk '{print $1,$2/(3770792.84),($1*$2)/(815439780.26)}' | grep -v 'e-' | sort -k 2nr | awk  'BEGIN {total2=0; total3=0} {total2+=$2; total3+=$3; print $1, $2, total2;}'
 
 types of fanout query by query frequency:
+note the large number of size 1 queries.
 1 60.1611 60.1611
 1000 8.85729 69.0184
 2 3.74861 72.767
@@ -26,6 +26,7 @@ types of fanout query by query frequency:
 4 1.23909 85.7949
 
 important types of  fanout query by amount of work for each type of query (frequency * page size):
+the validity of this is questionable, since the page is probably much larger than the full fanout.
 4000 46.0909 46.0909
 1000 40.9583 87.0492
 5000 7.60266 94.6519

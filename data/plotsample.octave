@@ -1,0 +1,21 @@
+%file: 'degree_vs_edge_qs' totaldegree vs. edge_query_popularity  82292015    197316 n, x y xx yy xy
+%file: 'fanouts_vs_indeg' totalfanouts vs. indeg  (8872407,363304891,2511282880,330359765773,9835603636178,602803019834);
+%file: (in vs out degree) (127046986,5306800261,5306800261,16965381329095,10460091067833,10150176638990); 
+
+filename = 'fanouts_vs_indeg'
+vec = fscanf(fopen(filename, 'r'), "%d\t%d");
+newvec = reshape(vec, 2, size(vec,1)/2)';
+
+%pick sample size for 
+sampled_newvec = newvec((randi(size(newvec,1), 4000, 1)),:);
+sampled_newvec += ones(size(sampled_newvec,1), size(sampled_newvec,2));
+logvec = log(sampled_newvec);
+
+disp(corrcoef(logvec(:,1), logvec(:,2)));
+loglog(sampled_newvec(:,1), sampled_newvec(:,2), 'bo');
+title('log-log plot of in-degree vs. fanouts in sample');
+sleep(100)
+
+
+
+

@@ -10,11 +10,22 @@ public class  Edge implements Serializable
     Pair<Vertex, Vertex> ends;    
     Vertex left;
     Vertex right;
-    byte[] payload = new byte[SystemParameters.instance().perEdgeWeight];
+    public byte[] payload = new byte[SystemParameters.instance().perEdgeWeight];
     
     public Edge(Vertex left, Vertex right){
         this.left = left;
         this.right = right;
+    }
+    
+    public Edge(Integer left, Integer right, byte[] metadata){
+        this.left = new Vertex(left);
+        this.right = new Vertex(right);
+        this.payload = metadata;
+    }
+    
+    public Edge(int leftid, int rightid){
+        this.left = new Vertex(leftid);
+        this.right = new Vertex(rightid);
     }
     
     public Vertex getLeftEndpoint(){

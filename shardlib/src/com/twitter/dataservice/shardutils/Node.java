@@ -6,6 +6,10 @@ public class Node implements IByteSerializable
 {
   int nodeNumber;
 
+  public static Node getNode(int i){
+      return new Node(i);
+  }
+  
   public Node(int number){
     this.nodeNumber = number;
   }
