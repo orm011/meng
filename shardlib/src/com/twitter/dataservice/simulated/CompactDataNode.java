@@ -16,8 +16,7 @@ import com.twitter.dataservice.shardutils.Vertex;
 
 /*
  * TODO: how do we make sure there are enough buckets in the hashtable?
- * 
- * */
+ */
 public class CompactDataNode implements IDataNode
 {
     //consistency condition: there is an edge (u, v) for every v in fanout(u)
@@ -30,12 +29,9 @@ public class CompactDataNode implements IDataNode
         name = "defaultName";
     }
     
-    public CompactDataNode(String name){
-        this.name = name;
-    }
-    
     public CompactDataNode(){
-        this.name = null;
+        fanouts = new HashMap<Integer, int[]>();
+        name = "defaultName";
     }
     
     @Override
@@ -68,7 +64,49 @@ public class CompactDataNode implements IDataNode
         
         return temp;
     }
+    
+    
+    /*
+     * TODO: 
+     * step 1: plain intersection + small test
+     * step 2: expensive, naive intersection for test
+     * step 3: make sure data is loaded in sorted order (enforce)
+     * step 4: intersection with remote: easy way: use already existing api server.
+     */
+    public Collection<Vertex> intersect(Vertex v, Vertex w, int pageSize, int offset){
+        System.out.println("intersect");
+        
+        int[] vfanout = fanouts.get(v.getId());
+        int[] wfanout = fanouts.get(w.getId());
+        
+        //assume sorted & unique
+        int searchi = Arrays.binarySearch(vfanout, offset);
+        int searchj = Arrays.binarySearch(wfanout, offset);        
 
+        int i = (1 - (searchi >>> 31))*searchi + (searchi >>> 31)*(searchi ^ -1);
+        int j = (1 - (searchj >>> 31))*searchj + (searchj >>> 31)*(searchj ^ -1);;
+        int count = 0;
+        
+        ArrayList<Vertex> result = new ArrayList<Vertex>();
+        
+        //System.out.println(String.format("%d,%d", i,j));
+        while (i < vfanout.length && j < wfanout.length && count < pageSize){
+            if (vfanout[i] > wfanout[j]){
+                j++;
+            } else if (vfanout[i] < wfanout[j]){
+                i++;
+            } else {
+                //System.out.println(String.format("%d, %d", i, j));
+                result.add(new Vertex(vfanout[i]));
+                i++; j++; count++;
+            }
+        }
+        
+        result.trimToSize();
+        return result;        
+    }
+    
+    
     @Override
     public List<Vertex> getIntersection(Vertex v, Vertex w) throws RemoteException
     {
