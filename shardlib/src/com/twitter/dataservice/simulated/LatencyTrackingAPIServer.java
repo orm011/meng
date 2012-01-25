@@ -141,19 +141,19 @@ public class LatencyTrackingAPIServer implements IAPIServer
     }
 
     @Override
-    public Collection<Vertex> getFanout(Vertex v)
+    public Collection<Vertex> getFanout(Vertex v, int pageSize, int offset)
     {
         long start = System.nanoTime();
-        Collection<Vertex> ans = measuredServer.getFanout(v);
+        Collection<Vertex> ans = measuredServer.getFanout(v, Integer.MAX_VALUE, -1);
         collector.logFanout(start, System.nanoTime(), v, ans.size());
         return ans;
     }
 
     @Override
-    public Collection<Vertex> getIntersection(Vertex v, Vertex w)
+    public Collection<Vertex> getIntersection(Vertex v, Vertex w, int pageSize, int offset)
     {
         long start = System.nanoTime();
-        Collection<Vertex> ans = getIntersection(v, w);
+        Collection<Vertex> ans = getIntersection(v, w, pageSize, offset);
         collector.logIntersection(start, System.nanoTime(), v, w, ans.size());
         return ans;
     }

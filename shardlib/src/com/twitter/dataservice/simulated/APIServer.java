@@ -1,18 +1,16 @@
 package com.twitter.dataservice.simulated;
 
+import com.google.common.primitives.Ints;
 import com.twitter.dataservice.remotes.IDataNode;
 import com.twitter.dataservice.sharding.INodeSelectionStrategy;
 import com.twitter.dataservice.sharding.ISharding;
 import com.twitter.dataservice.sharding.RoundRobinShardLib;
 import com.twitter.dataservice.sharding.PickFirstNodeShardLib;
-import com.twitter.dataservice.sharding.TwoTierHashSharding;
+import com.twitter.dataservice.shardingpolicy.TwoTierHashSharding;
 import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Node;
 import com.twitter.dataservice.shardutils.Vertex;
 
-import java.io.ObjectOutputStream.PutField;
-import java.net.MalformedURLException;
-import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -23,6 +21,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 
 public class APIServer implements IAPIServer
@@ -107,38 +107,55 @@ public class APIServer implements IAPIServer
     //TODO later: put the #nodes in system in the constructor arg.
     ExecutorService executor = Executors.newFixedThreadPool(2);
      
-    public static class FanoutTask implements Callable<Collection<Vertex>> {
+    public static class FanoutTask implements Callable<int[]> {
         IDataNode rn;
         Vertex v;
+        int pageSize;
+        int offset;
         
-        public FanoutTask(IDataNode rn, Vertex v){
+        public FanoutTask(IDataNode rn, Vertex v, int pageSize, int offset){
             this.rn = rn;
             this.v = v;
+            this.pageSize = pageSize;
+            this.offset = offset;
         }
         
         @Override
-        public Collection<Vertex> call() throws Exception
+        public int[] call() throws Exception
         {   
-            return rn.getFanout(v);
+            return rn.getFanout(v, pageSize, offset);
         }
         
     };
-    
-    //TODO: test correctness of parallel version
-    public Collection<Vertex> getFanout(Vertex v) {
-        
-      Collection<Node> destinations = shardinglib.getNodes(v);
-      Collection<Vertex> ans = new LinkedList<Vertex>();
 
-      List<Future<Collection<Vertex>>> futures = new LinkedList<Future<Collection<Vertex>>>();
+    
+    public static Collection<Vertex> toVertexCollection(int[] ids){
+        Collection<Vertex> wrap = new ArrayList<Vertex>(ids.length);
+        
+        for (int id: ids){
+            wrap.add(new Vertex(id));
+        }
+        
+        return wrap;
+    }
+    
+    
+    //TODO: this won't work for the version with 2-tier stuff
+    public Collection<Vertex> getFanout(Vertex v, int pageSize, int offset) {
+      if (shardinglib instanceof TwoTierHashSharding) throw new UnsupportedOperationException();
+       
+      Collection<Node> destinations = shardinglib.getNodes(v);
+      int[] ans = new int[]{};
+
+      List<Future<int[]>> futures = new LinkedList<Future<int[]>>();
         //TODO: make calls parallel
       for (Node n : destinations){
-            futures.add(executor.submit(new FanoutTask(nodes.get(n), v)));
+            futures.add(executor.submit(new FanoutTask(nodes.get(n), v, pageSize, offset)));
       } 
       
-      for (Future<Collection<Vertex>> ft: futures){
+      for (Future<int[]> ft: futures){
           try {
-              ans.addAll(ft.get());
+              Ints.concat(ans, ft.get());
           } catch (InterruptedException e)
           {
               throw new RuntimeException(e);
@@ -148,17 +165,20 @@ public class APIServer implements IAPIServer
           }
       }
         
-      return ans;
+      return toVertexCollection(ans);
     }
 
     public void putEdge(Edge e){
-        Node n = shardinglib.getNode(e.getLeftEndpoint(), e.getRightEndpoint());
-        
-        try {
-            nodes.get(n).putEdge(e);
-        } catch (RemoteException re){
-            throw new RuntimeException(re);
-        }
+        //currently loading each remote node separately
+        //TODO: make this configurable, may want to use this to help me test.
+        throw new NotImplementedException();
+//        Node n = shardinglib.getNode(e.getLeftEndpoint(), e.getRightEndpoint());
+//        
+//        try {
+//            nodes.get(n).putEdge(e);
+//        } catch (RemoteException re){
+//            throw new RuntimeException(re);
+//        }
     }   
     
     @Deprecated
@@ -178,14 +198,50 @@ public class APIServer implements IAPIServer
         //APIServer api = APIServer.apiWithRemoteWorkNodes(new String[]{name}, new String[]{address}, new String[]{port}, 1);
         //System.out.println("total load: " + api.totalLoad());
     }
-
-    @Override
-    public Collection<Vertex> getIntersection(Vertex v, Vertex w)
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
     
+   /*
+    * right now this implementation only works when id-ranges in fanouts for a particular node  are
+    * all located in matching positions in the list.
+    */
+    @Override
+    public Collection<Vertex> getIntersection(Vertex v, Vertex w, int pageSize, int offset){
+        Collection<Node> nodesv = shardinglib.getNodes(v), nodesw = shardinglib.getNodes(w);
+        assert (nodesv.size() == 1 && nodesw.size() == 1);
+        
+        Node vnode = nodesv.iterator().next(), wnode = nodesw.iterator().next();
+        
+        int[] result;
+        
+        //TODO: offset + pagesize in the remote case. want to use limited fanouts
+        try {
+            if (vnode.equals(wnode)){
+                result = nodes.get(vnode).getIntersection(v, w, pageSize, offset);
+            } else {
+                //TODO 1) parallelize fanout calls 2) figure if there are good ways to avoid
+                //bringing all of it at once ie. optimal amount of fanout to bring in before we run the intersections. 
+                //3) evaluate pushing operation to one of the nodes. (not as needed here because we are only measuring latency,
+                //in this case the API server would be a bottleneck if the Client weren't it.
+                //TODO: more careful analysis of the latency effects of intersecting here as well as whether I need to measure
+                // throughput in order to exhibit the benefits of the partitioning strategies (as opposed to only latency)
+                
+                int[] vfanout = nodes.get(vnode).getFanout(v, Integer.MAX_VALUE, -1);
+                int[] wfanout = nodes.get(wnode).getFanout(w, Integer.MAX_VALUE, -1);
+                
+                result = UtilMethods.intersectSortedUniqueArraySet(vfanout, wfanout, pageSize, offset);
+            }
+        } catch (RemoteException re){
+            throw new RuntimeException();
+        }
+        
+        
+        Collection<Vertex> wrap = new ArrayList<Vertex>();
+        
+        for (int id:result){
+            wrap.add(new Vertex(id));
+        }
+        
+        return wrap;
+    }
     
     //TODO: unit test?
     public int totalLoad(){

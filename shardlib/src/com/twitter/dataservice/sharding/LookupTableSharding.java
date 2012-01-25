@@ -13,10 +13,13 @@ import java.util.List;
 import java.util.Map;
 
 import com.twitter.dataservice.shardutils.Edge;
+import com.twitter.dataservice.shardutils.HierarchicalHashFunction;
 import com.twitter.dataservice.shardutils.Node;
 import com.twitter.dataservice.shardutils.Pair;
 import com.twitter.dataservice.shardutils.Shard;
 import com.twitter.dataservice.shardutils.Vertex;
+import com.twitter.dataservice.simulated.UtilMethods;
+
 
 public class LookupTableSharding implements INodeSelectionStrategy
 {
@@ -28,14 +31,21 @@ public class LookupTableSharding implements INodeSelectionStrategy
  *   (can reuse nodes)
  *approach 2: keep k sets of ids, one for each machine.
  * saves us pointer to node
+ * 
+ * approach 3, with new data and java hashmap vertexid -> nodeid.
+ * 10 million ids * 40 B/id (including linked list and pair pointers from HashMap)
  */
-    private Map<Integer, Node> table;
+    private int numNodes;
+    private Map<Integer, Byte> table;
+    private HierarchicalHashFunction hash = new HierarchicalHashFunction();
+    
     /*
      * load partition from tab separated file
      */
-    public LookupTableSharding(String partitionFile, int expectedSize){
-        table = new HashMap<Integer, Node>(expectedSize);
-
+    public LookupTableSharding(String partitionFile, int expectedSize, int numNodes, String separator){
+        table = new HashMap<Integer, Byte>(expectedSize);
+        this.numNodes = numNodes;
+        
         BufferedReader reader;        
         try
         {
@@ -50,8 +60,8 @@ public class LookupTableSharding implements INodeSelectionStrategy
         try
         {
             while ((currentLine = reader.readLine()) != null){
-                String[] lines = currentLine.split("\t");
-                table.put(Integer.parseInt(lines[0]), Node.getNode(Integer.parseInt(lines[1])));
+                String[] lines = currentLine.split(separator);
+                table.put(Integer.parseInt(lines[0]), Byte.parseByte(lines[1]));
             }
             
         } catch (IOException e)
@@ -62,15 +72,19 @@ public class LookupTableSharding implements INodeSelectionStrategy
     
     @Override
     public Node getNode(Vertex v, Vertex w)
-    {
-        return table.get(v.getId());
+    {   
+        return getNodes(v).iterator().next();
     }
 
     @Override
     public Collection<Node> getNodes(Vertex v)
     {
-        Collection<Node> ans = Arrays.asList(new Node[]{table.get(v.getId())});
-        return ans;
+        Byte node = table.get(v.getId());
+                
+        if (node == null){
+            node = (byte) (v.hashCode() % numNodes); //default to hash
+        }
+        
+        return UtilMethods.toNodeCollection(new byte[]{node});
     }
-
 }

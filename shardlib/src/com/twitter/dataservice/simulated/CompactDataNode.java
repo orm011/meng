@@ -10,6 +10,7 @@ import java.util.List;
 
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
+import com.google.common.primitives.Ints;
 import com.twitter.dataservice.remotes.IDataNode;
 import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Vertex;
@@ -17,7 +18,7 @@ import com.twitter.dataservice.shardutils.Vertex;
 /*
  * TODO: how do we make sure there are enough buckets in the hashtable?
  */
-public class CompactDataNode implements IDataNode
+public class CompactDataNode extends AbstractDataNode implements IDataNode
 {
     //consistency condition: there is an edge (u, v) for every v in fanout(u)
     //note the edge object also contains the pair.    
@@ -51,66 +52,26 @@ public class CompactDataNode implements IDataNode
     }
 
     @Override
-    public Collection<Vertex> getFanout(Vertex v) throws RemoteException
+    public int[] getFanout(Vertex v, int pageSize, int offset) throws RemoteException
     {        
         System.out.println("fanout: " + v);
-        int[] out = fanouts.get(v.getId());
         
-        ArrayList<Vertex> temp = new ArrayList<Vertex>(out.length);
+        int[] fullfanout = fanouts.get(v.getId());
+        int pos = UtilMethods.getInsertionIndex(fullfanout, offset);
         
-        for (Integer id: out){
-            temp.add(new Vertex(id));
-        }
-        
-        return temp;
+        int[] result = Arrays.copyOfRange(fullfanout, pos, Ints.min(new int[]{pos + pageSize, fullfanout.length}));
+        return result;
     }
-    
-    
-    /*
-     * TODO: 
-     * step 1: plain intersection + small test
-     * step 2: expensive, naive intersection for test
-     * step 3: make sure data is loaded in sorted order (enforce)
-     * step 4: intersection with remote: easy way: use already existing api server.
-     */
-    public Collection<Vertex> intersect(Vertex v, Vertex w, int pageSize, int offset){
-        System.out.println("intersect");
-        
+
+    @Override
+    public int[] getIntersection(Vertex v, Vertex w, int pageSize, int offset) throws RemoteException
+    {
+        System.out.println("getIntersection");
+
         int[] vfanout = fanouts.get(v.getId());
         int[] wfanout = fanouts.get(w.getId());
         
-        //assume sorted & unique
-        int searchi = Arrays.binarySearch(vfanout, offset);
-        int searchj = Arrays.binarySearch(wfanout, offset);        
-
-        int i = (1 - (searchi >>> 31))*searchi + (searchi >>> 31)*(searchi ^ -1);
-        int j = (1 - (searchj >>> 31))*searchj + (searchj >>> 31)*(searchj ^ -1);;
-        int count = 0;
-        
-        ArrayList<Vertex> result = new ArrayList<Vertex>();
-        
-        //System.out.println(String.format("%d,%d", i,j));
-        while (i < vfanout.length && j < wfanout.length && count < pageSize){
-            if (vfanout[i] > wfanout[j]){
-                j++;
-            } else if (vfanout[i] < wfanout[j]){
-                i++;
-            } else {
-                //System.out.println(String.format("%d, %d", i, j));
-                result.add(new Vertex(vfanout[i]));
-                i++; j++; count++;
-            }
-        }
-        
-        result.trimToSize();
-        return result;        
-    }
-    
-    
-    @Override
-    public List<Vertex> getIntersection(Vertex v, Vertex w) throws RemoteException
-    {
-        throw new NotImplementedException();
+        return UtilMethods.intersectSortedUniqueArraySet(vfanout, wfanout, pageSize, offset);
     }
 
     public void putFanout(int id, int[] fanouts){

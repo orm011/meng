@@ -21,7 +21,7 @@ import com.twitter.dataservice.shardutils.Vertex;
  * oscarm's version of redis. 
  * TODO: how do we make sure there are enough buckets in the hashtable?
  */
-public class DictionaryBackedDataNode implements IDataNode
+public class DictionaryBackedDataNode extends AbstractDataNode implements IDataNode
 {
     //consistency condition: there is an edge (u, v) for every v in fanout(u)
     //note the edge object also contains the pair.
@@ -38,12 +38,18 @@ public class DictionaryBackedDataNode implements IDataNode
         this.name = null;
     }
     
+    
     @Override
     public Edge getEdge(Vertex left, Vertex right) throws RemoteException
     {
         Edge ans = new Edge(left.getId(), right.getId(), edges.get(new Pair<Integer, Integer>(left.getId(), right.getId())));
         if (ans == null) throw new AssertionError();
         return ans;
+    }
+    
+    @Override
+    public int[] getFanout(Vertex v, int pageSize, int offset){
+        throw new NotImplementedException();
     }
 
     @Override
@@ -61,6 +67,11 @@ public class DictionaryBackedDataNode implements IDataNode
         }
         
         return temp;
+    }
+    
+    @Override
+    public int[] getIntersection(Vertex v, Vertex w, int pageSize, int offset){
+        throw new NotImplementedException();
     }
 
     @Override
@@ -101,5 +112,12 @@ public class DictionaryBackedDataNode implements IDataNode
     public int totalLoad() throws RemoteException
     {
         return edges.size();
+    }
+
+    @Override
+    public void putFanout(int vertex, int[] fanout)
+    {
+        // TODO Auto-generated method stub
+        throw new NotImplementedException();
     }
 }

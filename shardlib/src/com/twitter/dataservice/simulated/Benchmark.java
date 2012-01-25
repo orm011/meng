@@ -17,7 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.twitter.dataservice.remotes.IDataNode;
-import com.twitter.dataservice.sharding.TwoTierHashSharding;
+import com.twitter.dataservice.shardingpolicy.TwoTierHashSharding;
 import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Node;
 import com.twitter.dataservice.parameters.GraphParameters;
@@ -127,8 +127,12 @@ public class Benchmark {
         numNodesPerException = SystemParameters.instance().numDataNodes;
         numExceptions = gp.getNumberVertices();
         
-        //TODO: sanity check sharding is splitting things reasonably evenly and log relative sizes.
         Map<Node, IDataNode> nodes = APIServer.getRemoteNodes(names, address, ports);
+
+        
+        //TODO:construct shard lib here.
+        
+        
         TwoTierHashSharding sh = TwoTierHashSharding.makeTwoTierHashFromNumExceptions(
                 numExceptions, 
                 nodes, 

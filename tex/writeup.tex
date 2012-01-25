@@ -71,7 +71,17 @@ Kirk Schloegel∗,†, George Karypis and Vipin Kumar
 ---Notes on partitioning the Graph:
 Tried partitioning. Challenges 
 1: getting to the required format. The job ran as desired but the parity of the # edges was not right. (roughly good though)
-2: METIS cannot handle more than 2^32 edges apparently, so it chokes on my 7Billion+ edges graph
+
+2: METIS it chokes on the query graph.
+Actually, METIS can handle larger #edges/#vertices/#weight totals by recompiling with larger types, 
+except METIS took to long with a graph of params vertex:127046986  edges:692314 (011 weighted vertices and edges)  with a vertex weight sum of
+also, it failed silently when I ran this same graph with a smaller data type, giving malformed partitions.
+In the 64 bit case I stopped it after 3 days of running with 8 GB of memory 100% cpu, and it indicated it had been stopped
+during 'initial' partitioning.
+
+Next step is regenerating the graph with query based vertex weights.
+
+
 3: PROBABLY metis cannot handle a graph of that size.
 
 

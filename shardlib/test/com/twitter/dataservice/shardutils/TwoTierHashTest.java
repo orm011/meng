@@ -21,7 +21,7 @@ import com.twitter.dataservice.remotes.IDataNode;
 import com.twitter.dataservice.sharding.CycleIterator;
 import com.twitter.dataservice.sharding.ISharding;
 import com.twitter.dataservice.sharding.SlidingWindowCycleIterator;
-import com.twitter.dataservice.sharding.TwoTierHashSharding;
+import com.twitter.dataservice.shardingpolicy.TwoTierHashSharding;
 import com.twitter.dataservice.simulated.Counter;
 import com.twitter.dataservice.simulated.Graph;
 import com.twitter.dataservice.simulated.MapBackedCounter;

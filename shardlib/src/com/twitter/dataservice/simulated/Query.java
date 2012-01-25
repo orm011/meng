@@ -28,9 +28,10 @@ public abstract class Query {
             this.v = v;
         }
         
+        //TODO: pass full set of arguments from workload.
         @Override
         public void execute(IAPIServer api){
-            api.getFanout(v);
+            api.getFanout(v, Integer.MAX_VALUE, -1);
         }
     }
     
@@ -43,6 +44,7 @@ public abstract class Query {
             right = w;
         }
         
+        //TODO: implement this soon
         @Override
         public void execute(IAPIServer api){
             throw new RuntimeException("not implemented yet");

@@ -2,9 +2,9 @@ package com.twitter.dataservice.simulated;
 
 import java.rmi.RemoteException;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import com.twitter.dataservice.remotes.IDataNode;
 import com.twitter.dataservice.shardutils.Edge;
@@ -16,7 +16,7 @@ import com.twitter.dataservice.shardutils.Vertex;
  * assumes no concurrent clients for now
  */
 
-public class TestingWorkNode implements IDataNode
+public class TestingWorkNode extends AbstractDataNode implements IDataNode
 {
     private Counter<Class> counter = new MapBackedCounter<Class>(0);
     private int numEdges = 0;
@@ -66,5 +66,26 @@ public class TestingWorkNode implements IDataNode
     public int totalLoad() throws RemoteException
     {
         return getNumEdges();
+    }
+
+    @Override
+    public int[] getFanout(Vertex v, int pageSize, int offset) throws RemoteException
+    {
+        this.getFanout(v);
+        return null;
+    }
+
+    @Override
+    public int[] getIntersection(Vertex v, Vertex w, int pageSize, int offset) throws RemoteException
+    {
+        this.getIntersection(v, w);
+        return null;
+    }
+
+    @Override
+    public void putFanout(int vertex, int[] fanout)
+    {
+        throw new NotImplementedException();
+        
     }
 }

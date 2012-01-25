@@ -1,5 +1,6 @@
 package com.twitter.dataservice.simulated;
 
+import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,50 +31,56 @@ public class CompactDataNodeTest
         cdn.putFanout(3, fanout3);
         cdn.putFanout(4, fanout4);
         
-        Collection<Vertex> result1 = cdn.intersect(new Vertex(1), new Vertex(1), fanout1.length, -1);
+        try {
+        
+        Collection<Vertex> result1 =  getVertexList(cdn.getIntersection(new Vertex(1), new Vertex(1), fanout1.length, -1));
         Assert.assertTrue(result1.equals(getVertexList(fanout1)));
         
-        Collection<Vertex> result2 = cdn.intersect(new Vertex(1), new Vertex(2), fanout1.length + fanout2.length, -1);
+        Collection<Vertex> result2 = getVertexList(cdn.getIntersection(new Vertex(1), new Vertex(2), fanout1.length + fanout2.length, -1));
         Assert.assertTrue(result2.equals(Collections.emptyList()));
         
-        Collection<Vertex> result3 = cdn.intersect(new Vertex(2), new Vertex(3), fanout2.length + fanout3.length, -1);
+        Collection<Vertex> result3 = getVertexList(cdn.getIntersection(new Vertex(2), new Vertex(3), fanout2.length + fanout3.length, -1));
         Assert.assertEquals(getVertexList(new int[]{3,9}), result3);
         
-        Collection<Vertex> result4 = cdn.intersect(new Vertex(3), new Vertex(4), fanout3.length + fanout4.length, -1);
+        Collection<Vertex> result4 = getVertexList(cdn.getIntersection(new Vertex(3), new Vertex(4), fanout3.length + fanout4.length, -1));
         Assert.assertEquals(getVertexList(new int[]{0,12}), result4);
         
-        Collection<Vertex> offsetresult1 = cdn.intersect(new Vertex(1), new Vertex(1), 1, 0);
+        Collection<Vertex> offsetresult1 = getVertexList(cdn.getIntersection(new Vertex(1), new Vertex(1), 1, 0));
         Assert.assertEquals(getVertexList(new int[]{0}), offsetresult1);
         
-        Collection<Vertex> offsetresult2 = cdn.intersect(new Vertex(1), new Vertex(1), 2, 0);
+        Collection<Vertex> offsetresult2 = getVertexList(cdn.getIntersection(new Vertex(1), new Vertex(1), 2, 0));
         Assert.assertEquals(getVertexList(new int[]{0,2}), offsetresult2);
         
-        Collection<Vertex> offsetresult3 = cdn.intersect(new Vertex(1), new Vertex(1), 0, 1);
+        Collection<Vertex> offsetresult3 = getVertexList(cdn.getIntersection(new Vertex(1), new Vertex(1), 0, 1));
         Assert.assertEquals(Collections.EMPTY_LIST, offsetresult3);
         
-        Collection<Vertex> offsetresult4 = cdn.intersect(new Vertex(1), new Vertex(1), 1, 10);
+        Collection<Vertex> offsetresult4 = getVertexList(cdn.getIntersection(new Vertex(1), new Vertex(1), 1, 10));
         Assert.assertEquals(getVertexList(new int[]{10}), offsetresult4);
                 
-        Collection<Vertex> offsetresult5 = cdn.intersect(new Vertex(1), new Vertex(2), 1, 11);
+        Collection<Vertex> offsetresult5 = getVertexList(cdn.getIntersection(new Vertex(1), new Vertex(2), 1, 11));
         Assert.assertEquals(Collections.EMPTY_LIST, offsetresult5);
         
-        Collection<Vertex> offsetresult6 = cdn.intersect(new Vertex(3), new Vertex(4), fanout3.length + fanout4.length, 6);
+        Collection<Vertex> offsetresult6 = getVertexList(cdn.getIntersection(new Vertex(3), new Vertex(4), fanout3.length + fanout4.length, 6));
         Assert.assertEquals(getVertexList(new int[]{12}), offsetresult6);
         
-        Collection<Vertex> offsetresult7 = cdn.intersect(new Vertex(3), new Vertex(4), fanout3.length + fanout4.length, 13);
+        Collection<Vertex> offsetresult7 = getVertexList(cdn.getIntersection(new Vertex(3), new Vertex(4), fanout3.length + fanout4.length, 13));
         Assert.assertEquals(Collections.EMPTY_LIST, offsetresult7);
      
-        Collection<Vertex> offsetresult8 = cdn.intersect(new Vertex(3), new Vertex(4), fanout3.length + fanout4.length, 12);
+        Collection<Vertex> offsetresult8 = getVertexList(cdn.getIntersection(new Vertex(3), new Vertex(4), fanout3.length + fanout4.length, 12));
         Assert.assertEquals(getVertexList(new int[]{12}), offsetresult8);
         
-        Collection<Vertex> offsetresult9 = cdn.intersect(new Vertex(3), new Vertex(4), fanout3.length + fanout4.length, -10);
+        Collection<Vertex> offsetresult9 = getVertexList(cdn.getIntersection(new Vertex(3), new Vertex(4), fanout3.length + fanout4.length, -10));
         Assert.assertEquals(getVertexList(new int[]{0,12}), offsetresult9);
 
         //we assume it fails if one of the vertices does not exist in the node
         try {
-            cdn.intersect(new Vertex(100), new Vertex(1), 100, 100);
+            getVertexList(cdn.getIntersection(new Vertex(100), new Vertex(1), 100, 100));
             Assert.fail();
         } catch (NullPointerException npe) { }
+        
+        } catch (RemoteException re){
+            Assert.fail();
+        }
     }
     
     public ArrayList<Vertex> getVertexList(int[] intarray){

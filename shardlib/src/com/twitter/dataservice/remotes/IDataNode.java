@@ -12,14 +12,17 @@ public interface IDataNode extends Remote
 {
     Edge getEdge(Vertex left, Vertex right) throws  RemoteException;
     
+    int[] getFanout(Vertex v, int pageSize, int offset) throws RemoteException;
+
     Collection<Vertex> getFanout(Vertex v) throws RemoteException;
     
-    List<Vertex> getIntersection(Vertex v, Vertex w) throws RemoteException;
+    int[] getIntersection(Vertex v, Vertex w, int pageSize, int offset) throws RemoteException;
     
-    //Random walk. Need to get to this later.
+    void putFanout(int vertex, int[] fanout);
     
     void putEdge(Edge e) throws RemoteException;
     
+    //Random walk. Need to get to this later. <- haha forget it bro.    
     //some utilities
     void reset() throws RemoteException;
     int totalLoad() throws RemoteException;

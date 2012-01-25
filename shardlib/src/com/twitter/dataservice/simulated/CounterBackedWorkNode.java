@@ -1,21 +1,13 @@
 package com.twitter.dataservice.simulated;
 
 import java.rmi.RemoteException;
-import java.rmi.server.UnicastRemoteObject;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
-import com.twitter.dataservice.remotes.IDataNode;
 import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Vertex;
 
-public class CounterBackedWorkNode implements IDataNode
+
+public class CounterBackedWorkNode extends AbstractDataNode
 {   
     //TODO: will need to keep a dictionary or so to store data
     Counter<Vertex> internalCount = new MapBackedCounter<Vertex>();
@@ -33,23 +25,23 @@ public class CounterBackedWorkNode implements IDataNode
     }
 
     @Override
-    public Collection<Vertex> getFanout(Vertex v) throws RemoteException
+    public int[] getFanout(Vertex v, int pageSize, int offset) throws RemoteException
     {
+        if (pageSize != Integer.MAX_VALUE || !(offset < 0)) throw new NotImplementedException();
         //System.out.println("FanOut request " + v);
-        int x = 0;
-        
+        int x = 0;        
         if ( !((x = internalCount.getCount(v)) > 0)) throw new AssertionError();
 
-        ArrayList<Vertex> answer = new ArrayList<Vertex>(x);        
+        int[] ans = new int[x];
         for (int i = 0; i < x; i++){
-            answer.add(i, new Vertex(i));
+            ans[i] = i;
         }
-        
-        return answer;
+
+        return ans;
     }
 
     @Override
-    public List<Vertex> getIntersection(Vertex v, Vertex w) throws RemoteException
+    public int[] getIntersection(Vertex v, Vertex w, int pageSize, int offset) throws RemoteException
     {
         //System.out.println("Intersection request");
         throw new UnsupportedOperationException();
@@ -73,6 +65,13 @@ public class CounterBackedWorkNode implements IDataNode
     public int totalLoad() throws RemoteException
     {
         return internalCount.getTotal();
+    }
+
+    @Override
+    public void putFanout(int vertex, int[] fanout)
+    {
+        // TODO Auto-generated method stub
+       throw new NotImplementedException(); 
     }
     
 }

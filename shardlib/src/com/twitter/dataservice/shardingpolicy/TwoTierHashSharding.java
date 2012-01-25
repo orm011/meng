@@ -1,4 +1,4 @@
-package com.twitter.dataservice.sharding;
+package com.twitter.dataservice.shardingpolicy;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -12,6 +12,10 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import com.twitter.dataservice.remotes.IDataNode;
+import com.twitter.dataservice.sharding.CycleIterator;
+import com.twitter.dataservice.sharding.IShardPrimitives;
+import com.twitter.dataservice.sharding.ISharding;
+import com.twitter.dataservice.sharding.SlidingWindowCycleIterator;
 import com.twitter.dataservice.shardutils.*;
 
 //most basic sharding. edge goes to  a Token.
