@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.twitter.dataservice.remotes.IDataNode;
+import com.twitter.dataservice.shardingpolicy.SimpleTwoTierSharding;
 import com.twitter.dataservice.shardingpolicy.TwoTierHashSharding;
 import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Node;
@@ -128,20 +129,21 @@ public class Benchmark {
         numExceptions = gp.getNumberVertices();
         
         Map<Node, IDataNode> nodes = APIServer.getRemoteNodes(names, address, ports);
-
+        //TODO: instantiate desired sharding policy from file here        
+        int[] exceptions = new int[numExceptions];
+        for (int i = 0; i < exceptions.length; i++){exceptions[i] = i;}
         
-        //TODO:construct shard lib here.
+        SimpleTwoTierSharding sh = new SimpleTwoTierSharding(nodes.size(), exceptions, numShardsPerException);
         
+//        TwoTierHashSharding sh = TwoTierHashSharding.makeTwoTierHashFromNumExceptions(
+//                numExceptions, 
+//                nodes, 
+//                numOrdinaryShards, 
+//                numShardsPerException, 
+//                numNodesPerException);        
+//        IAPIServer apiServer = APIServer.makeServer(nodes, sh);        
         
-        TwoTierHashSharding sh = TwoTierHashSharding.makeTwoTierHashFromNumExceptions(
-                numExceptions, 
-                nodes, 
-                numOrdinaryShards, 
-                numShardsPerException, 
-                numNodesPerException);
-        
-        IAPIServer apiServer = APIServer.makeServer(nodes, sh);        
-        
+        IAPIServer apiServer = new APIServer(nodes, sh);
         runBenchmark(gp, wp, apiServer);
         System.exit(0);
     }
@@ -152,7 +154,7 @@ public class Benchmark {
     public static final String NUM_EXCEPTIONS = "sharding.numExceptions";
     
     public static void runBenchmark(GraphParameters graphParams, WorkloadParameters workloadParams, IAPIServer apiServer){
-        
+
       Graph graph = SkewedDegreeGraph.makeSkewedDegreeGraph(graphParams); //TODO: change this
       //MetricsCollector omc = new LatencyTrackingAPIServer.LoggerCollector(graphParams, workloadParams);
       MetricsCollector omc = new LatencyTrackingAPIServer.InMemoryCollector(graphParams, workloadParams);

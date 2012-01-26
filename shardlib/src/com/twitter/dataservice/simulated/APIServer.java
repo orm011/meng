@@ -4,8 +4,8 @@ import com.google.common.primitives.Ints;
 import com.twitter.dataservice.remotes.IDataNode;
 import com.twitter.dataservice.sharding.INodeSelectionStrategy;
 import com.twitter.dataservice.sharding.ISharding;
-import com.twitter.dataservice.sharding.RoundRobinShardLib;
 import com.twitter.dataservice.sharding.PickFirstNodeShardLib;
+import com.twitter.dataservice.shardingpolicy.RoundRobinShardLib;
 import com.twitter.dataservice.shardingpolicy.TwoTierHashSharding;
 import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Node;
@@ -81,12 +81,8 @@ public class APIServer implements IAPIServer
         
         return nodes;
     }
-        
-    //TODO: make api server take shardling lib (construct that first?)
-    //TODO: make shardling lib take parameters: #shards, etc.
-    //TODO: figure out how to not repeat work 
-    
-    private APIServer(Map<Node, IDataNode> nodes, INodeSelectionStrategy shardinglib){
+            
+    public APIServer(Map<Node, IDataNode> nodes, INodeSelectionStrategy shardinglib){
         this.nodes = nodes;
         this.shardinglib = shardinglib;       
     }
