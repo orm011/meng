@@ -49,9 +49,17 @@ public class UtilMethods
         return wrap;
     }
     
-    public static Collection<Node> toNodeCollection(byte[] nodes){
+    public static Collection<Node> toNodeCollection(int[] nodes){
         Collection<Node> wrap = new ArrayList<Node>(nodes.length);
         for (int nodeid: nodes){
+            wrap.add(new Node(nodeid));
+        }
+        return wrap;
+    }
+    
+    public static Collection<Node> toNodeCollection(byte[] nodes){
+        Collection<Node> wrap = new ArrayList<Node>(nodes.length);
+        for (byte nodeid: nodes){
             wrap.add(new Node(nodeid));
         }
         return wrap;

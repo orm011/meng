@@ -13,6 +13,10 @@ public class Node implements IByteSerializable
   public Node(int number){
     this.nodeNumber = number;
   }
+  
+  public int getId(){
+      return this.nodeNumber;
+  }
 
   @Override public boolean equals(Object o) {
     return (o instanceof Node) && ((Node) o).nodeNumber == nodeNumber;

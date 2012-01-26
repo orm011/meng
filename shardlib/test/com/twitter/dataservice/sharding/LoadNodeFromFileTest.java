@@ -14,6 +14,7 @@ import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Vertex;
 import com.twitter.dataservice.simulated.CompactDataNode;
 import com.twitter.dataservice.simulated.DictionaryBackedDataNode;
+import com.twitter.dataservice.simulated.UtilMethods;
 import com.twitter.dataservice.simulated.WorkNodeMain;
 
 public class LoadNodeFromFileTest

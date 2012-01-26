@@ -1,5 +1,6 @@
-package com.twitter.dataservice.sharding;
+package com.twitter.dataservice.shardingpolicy;
 
+import com.twitter.dataservice.sharding.INodeSelectionStrategy;
 import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Node;
 import com.twitter.dataservice.shardutils.Vertex;

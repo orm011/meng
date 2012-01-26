@@ -1,5 +1,6 @@
 package com.twitter.dataservice.sharding;
 
+import com.twitter.dataservice.shardingpolicy.RoundRobinShardLib;
 import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Node;
 import com.twitter.dataservice.shardutils.Vertex;
