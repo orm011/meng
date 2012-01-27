@@ -39,13 +39,18 @@ public class VertexHashSharding implements INodeSelectionStrategy
         return Integer.MAX_VALUE & Ints.hashCode(x);
     }
     
+    public static int hash(int leftid, int rightid, int numNodes, int numShards){
+        int start = hash(leftid) % numNodes;
+        int offset = hash(rightid) % numShards;
+        int nodeid = (start + offset) % numNodes;
+        
+        return nodeid;
+    }
+    
     @Override
     public Node getNode(Vertex v, Vertex w)
     {
-        int start = hash(v.getId()) % numNodes;
-        int offset = hash(w.getId()) % numShards;
-        int nodeid = (start + offset) % numNodes;
-        return new Node(nodeid);
+        return new Node(hash(v.getId(), w.getId(), numNodes, numShards));
     }
 
     @Override

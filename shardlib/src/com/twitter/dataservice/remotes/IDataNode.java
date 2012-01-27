@@ -18,7 +18,7 @@ public interface IDataNode extends Remote
     
     int[] getIntersection(Vertex v, Vertex w, int pageSize, int offset) throws RemoteException;
     
-    void putFanout(int vertex, int[] fanout);
+    void putFanout(int vertex, int[] fanout) throws RemoteException;
     
     void putEdge(Edge e) throws RemoteException;
     

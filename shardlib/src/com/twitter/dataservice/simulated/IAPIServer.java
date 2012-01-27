@@ -14,4 +14,6 @@ public interface IAPIServer
     public Collection<Vertex> getIntersection(Vertex v, Vertex w, int pageSize, int offset);
     
     public void putEdge(Edge e);
+    
+    public void putFanout(int vertexid, int[] fanouts);
 }

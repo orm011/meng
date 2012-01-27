@@ -1,6 +1,7 @@
 package com.twitter.dataservice.simulated;
 
 import com.google.common.primitives.Ints;
+import com.twitter.dataservice.parameters.SystemParameters;
 import com.twitter.dataservice.remotes.IDataNode;
 import com.twitter.dataservice.sharding.INodeSelectionStrategy;
 import com.twitter.dataservice.sharding.ISharding;
@@ -29,8 +30,8 @@ public class APIServer implements IAPIServer
 {
     //TODO: make it api have interface like an individual node?;
     Map<Node, IDataNode> nodes = new HashMap<Node, IDataNode>();
-    private INodeSelectionStrategy shardinglib = null; // see constructor
-
+    private INodeSelectionStrategy shardinglib = null; // see constructor 
+    ExecutorService executor;
     //needed cause of existing test
     public static APIServer apiWithGivenWorkNodes(List<? extends IDataNode> givenNodes){
         Map<Node, IDataNode> nodes = new HashMap<Node, IDataNode>(givenNodes.size());
@@ -84,7 +85,8 @@ public class APIServer implements IAPIServer
             
     public APIServer(Map<Node, IDataNode> nodes, INodeSelectionStrategy shardinglib){
         this.nodes = nodes;
-        this.shardinglib = shardinglib;       
+        this.shardinglib = shardinglib;
+        executor = Executors.newFixedThreadPool(nodes.size());
     }
 
     public Edge getEdge(Vertex v, Vertex w){
@@ -99,9 +101,7 @@ public class APIServer implements IAPIServer
 
         return result;        
     }
-    
-    //TODO later: put the #nodes in system in the constructor arg.
-    ExecutorService executor = Executors.newFixedThreadPool(2);
+
      
     public static class FanoutTask implements Callable<int[]> {
         IDataNode rn;
@@ -175,7 +175,18 @@ public class APIServer implements IAPIServer
 //        } catch (RemoteException re){
 //            throw new RuntimeException(re);
 //        }
-    }   
+    }
+    
+    //TODO: we need to compute destination edges on a 'per edge' basis.
+    //we can still do that and batch send after.
+    //THIS IS INTENTIONALY BROKEN EXCEPT FOR VERY SPECIAL CASES
+    public void putFanout(int vertexid, int[] fanouts){
+        try {
+            nodes.get(new Node(0)).putFanout(vertexid, fanouts);
+        } catch (RemoteException re){
+            throw new RuntimeException(re);
+        }
+    }
     
     @Deprecated
     public static void main(String[] args){ 

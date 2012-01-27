@@ -30,20 +30,13 @@ public class WorkNodeMain
             Registry registry;
             registry = LocateRegistry.createRegistry(1099);
             
-            int x = 5;
-            while (x > 0) {
-                Thread.sleep(2000);
-                System.out.println("starting in ..." +  x);
-                x--;
-            }
-            
             List<IDataNode> nodes = new LinkedList<IDataNode>();
             
             for (String namefile: argv){
                 String name = namefile.split("-")[0];
                 
                 System.out.printf("Registering work node %s...\n", name);
-                CompactDataNode dn = new CompactDataNode(3100);
+                CompactDataNode dn = new CompactDataNode();
                 nodes.add(dn);
                 IDataNode stub =
                     (IDataNode) UnicastRemoteObject.exportObject(dn, 0);
@@ -51,21 +44,18 @@ public class WorkNodeMain
                 
                 if (namefile.split("-").length > 1){
                     String filename = namefile.split("-")[1];    
-                    System.out.println(String.format("loading %s using file %s", name, filename));
+                    System.out.println(String.format("loading %s using local file %s", name, filename));
                     loadFromLocal(filename, dn);
                 }
                 
-                System.out.println("Great success.");
+                System.out.println("Success");
             }
             
-            System.out.println("about to gc");
-            System.gc();
-            
-            while (true) {
-                Thread.sleep(5000);
-                System.out.println("sleeping..");
-            }
-            
+//            while (true) {
+//                Thread.sleep(5000);
+//                System.out.println("sleeping..");
+//            }
+//            
         } catch (Exception e){
             e.printStackTrace();
             System.exit(1);

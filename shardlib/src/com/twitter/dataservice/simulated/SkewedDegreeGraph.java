@@ -12,7 +12,11 @@ import java.util.Random;
 import org.apache.commons.math.MathException;
 import org.apache.commons.math.distribution.ZipfDistributionImpl;
 
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+
+import com.sun.org.apache.bcel.internal.generic.FNEG;
 import com.twitter.dataservice.shardutils.Edge;
+import com.twitter.dataservice.shardutils.Pair;
 import com.twitter.dataservice.shardutils.Vertex;
 import com.twitter.dataservice.parameters.GraphParameters;
 import com.twitter.dataservice.parameters.WorkloadParameters;
@@ -104,8 +108,36 @@ public class SkewedDegreeGraph implements Graph {
       public int getDisconnnectedVertices(){
           return disconnected;
       }
-                  
-      //use: to place it into the system
+      
+      //TODO: add unit test
+      public class FanoutIterator implements Iterator<Pair<Integer, int[]>>{
+
+        int currentVertex = disconnected;
+        @Override
+        public boolean hasNext()
+        {
+            return currentVertex < degreeTable.length;
+        }
+
+        @Override
+        public Pair<Integer, int[]> next()
+        {
+            int[] fanouts = new int[degreeTable[currentVertex]];
+            for (int i = 0; i < fanouts.length; i++){
+                fanouts[i] = i;
+            }
+            currentVertex++;
+            return new Pair<Integer, int[]>(currentVertex, fanouts);
+        }
+
+        @Override
+        public void remove()
+        {
+            throw new NotImplementedException();
+        }
+          
+      }
+      
       public class SkewedDegreeGraphIterator implements Iterator<Edge>{
 
         int currentVertex = disconnected - 1;
@@ -117,16 +149,9 @@ public class SkewedDegreeGraph implements Graph {
             return (remainingEdges > 0 || (currentVertex + 1) < degreeTable.length);
         }
 
-//        private int nextNonZero(int[] array, int start){
-//            for ( ; start < array.length && array[start] == 0; start++) ;
-//            
-//            //@condition: start >= array.length || array[start] == 0 (mutually exclusive) 
-//            return start;
-//        }
-//        
         @Override
         public Edge next()
-        {   
+        {
             if (!hasNext()) throw new NoSuchElementException();
             if (0 == remainingEdges) {
                 currentVertex++;
@@ -140,7 +165,7 @@ public class SkewedDegreeGraph implements Graph {
         public void remove()
         {
             throw new UnsupportedOperationException();            
-        }          
+        }
       };
             
       //use: to query at benchmark time
@@ -186,7 +211,6 @@ public class SkewedDegreeGraph implements Graph {
                 return Query.fanoutQuery(new Vertex(index));
             }
             
-            
         }
             
 
@@ -209,7 +233,11 @@ public class SkewedDegreeGraph implements Graph {
     {
         return new SkewedDegreeGraphIterator();
     }
+
+    @Override
+    public Iterator<Pair<Integer, int[]>> fanoutIterator()
+    {
+        return new FanoutIterator();
+    }
     
 }
-
-      

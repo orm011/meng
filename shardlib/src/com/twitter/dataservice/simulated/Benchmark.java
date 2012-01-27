@@ -16,11 +16,13 @@ import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Ticker;
 import com.twitter.dataservice.remotes.IDataNode;
 import com.twitter.dataservice.shardingpolicy.SimpleTwoTierSharding;
 import com.twitter.dataservice.shardingpolicy.TwoTierHashSharding;
 import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Node;
+import com.twitter.dataservice.shardutils.Pair;
 import com.twitter.dataservice.parameters.GraphParameters;
 import com.twitter.dataservice.parameters.SystemParameters;
 import com.twitter.dataservice.parameters.WorkloadParameters;
@@ -118,14 +120,11 @@ public class Benchmark {
             ports[i] = addressWithPort[1];
         }
         
-        int numOrdinaryShards = Integer.parseInt(prop.getProperty(NUM_ORDINARY_SHARDS));
         int numShardsPerException; // = Integer.parseInt(prop.getProperty(NUM_SHARDS_PER_EXCEPTION));
-        int numNodesPerException; // = Integer.parseInt(prop.getProperty(NUM_EXCEPTIONS));
         int numExceptions; // = Integer.parseInt(prop.getProperty(NUM_EXCEPTIONS));
  
         //NOTE: remove this for longer term experiments. for now this is reasonable
         numShardsPerException = SystemParameters.instance().numDataNodes;
-        numNodesPerException = SystemParameters.instance().numDataNodes;
         numExceptions = gp.getNumberVertices();
         
         Map<Node, IDataNode> nodes = APIServer.getRemoteNodes(names, address, ports);
@@ -153,6 +152,10 @@ public class Benchmark {
     public static final String NUM_NODES_PER_EXCEPTION = "sharding.numNodesPerException";
     public static final String NUM_EXCEPTIONS = "sharding.numExceptions";
     
+    public static void loadGraphFromFile(String filename){
+        //TODO: implement this if needed, maybe not needed.
+    }
+    
     public static void runBenchmark(GraphParameters graphParams, WorkloadParameters workloadParams, IAPIServer apiServer){
 
       Graph graph = SkewedDegreeGraph.makeSkewedDegreeGraph(graphParams); //TODO: change this
@@ -160,7 +163,8 @@ public class Benchmark {
       MetricsCollector omc = new LatencyTrackingAPIServer.InMemoryCollector(graphParams, workloadParams);
       IAPIServer api = new LatencyTrackingAPIServer(apiServer, omc);      
       
-      Iterator<Edge> it = graph.graphIterator();
+      Iterator<Pair<Integer, int[]>> it = graph.fanoutIterator();
+      //Iterator<Edge> it = graph.graphIterator();
       omc.begin();
       
       //log degrees for auditing later
@@ -169,12 +173,14 @@ public class Benchmark {
       System.out.println("\n");
       System.out.println("done logging graph");
       
-      int i = 0;    
+      int i = 0;      
+      Ticker t = Ticker.systemTicker();
       while (it.hasNext()){
-          apiServer.putEdge(it.next());
+          long start = t.read();
+          Pair<Integer, int[]> current = it.next();
+          api.putFanout(current.getLeft(), current.getRight());
           i++;
       }
-     
       System.out.println("done loading graph");
       
       Iterator<Query> ot = graph.workloadIterator(workloadParams);     
