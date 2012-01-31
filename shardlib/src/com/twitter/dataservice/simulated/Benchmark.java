@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -20,9 +21,11 @@ import com.google.common.base.Ticker;
 import com.twitter.dataservice.remotes.IDataNode;
 import com.twitter.dataservice.shardingpolicy.SimpleTwoTierSharding;
 import com.twitter.dataservice.shardingpolicy.TwoTierHashSharding;
+import com.twitter.dataservice.shardingpolicy.VertexHashSharding;
 import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Node;
 import com.twitter.dataservice.shardutils.Pair;
+import com.twitter.dataservice.shardutils.Vertex;
 import com.twitter.dataservice.parameters.GraphParameters;
 import com.twitter.dataservice.parameters.SystemParameters;
 import com.twitter.dataservice.parameters.WorkloadParameters;
@@ -34,7 +37,6 @@ public class Benchmark {
     public static void main(String[] args) {
         //TODO: read some logname marker string from the config as well. will help in selecting all the logs 
         // for analysis. 
-        //TODO: make plot optional 
         if (args.length != 2){
             System.out.println("usage: logPropertyFile benchmarkPropertyFile");
             System.exit(1);
@@ -95,16 +97,19 @@ public class Benchmark {
                 Double.parseDouble(prop.getProperty(WorkloadParameters.QUERY_SKEW)))
         .build();
 
+        String logName = prop.getProperty("workload.inputLogName");
+        
         //reset system params
         int numNodes = Integer.parseInt(prop.getProperty(SystemParameters.NUM_DATA_NODES));
         int edgeWeight = Integer.parseInt(prop.getProperty(SystemParameters.PER_EDGE_WEIGHT));
         SystemParameters.reset(edgeWeight, numNodes);
         
+        
         //print all parsed params
         System.out.println(gp);
         System.out.println(wp);
         System.out.println(SystemParameters.instance());
-        System.out.println();
+        System.out.println(wp.getNumberOfQueries());
         
         //init shardlib, apiServer
         String[] names = new String[numNodes];
@@ -132,7 +137,8 @@ public class Benchmark {
         int[] exceptions = new int[numExceptions];
         for (int i = 0; i < exceptions.length; i++){exceptions[i] = i;}
         
-        SimpleTwoTierSharding sh = new SimpleTwoTierSharding(nodes.size(), exceptions, numShardsPerException);
+        VertexHashSharding sh = new VertexHashSharding(nodes.size());
+//        SimpleTwoTierSharding sh = new SimpleTwoTierSharding(nodes.size(), exceptions, numShardsPerException);
         
 //        TwoTierHashSharding sh = TwoTierHashSharding.makeTwoTierHashFromNumExceptions(
 //                numExceptions, 
@@ -143,7 +149,7 @@ public class Benchmark {
 //        IAPIServer apiServer = APIServer.makeServer(nodes, sh);        
         
         IAPIServer apiServer = new APIServer(nodes, sh);
-        runBenchmark(gp, wp, apiServer);
+        runBenchmark(gp, wp, apiServer, logName);
         System.exit(0);
     }
     
@@ -156,36 +162,51 @@ public class Benchmark {
         //TODO: implement this if needed, maybe not needed.
     }
     
-    public static void runBenchmark(GraphParameters graphParams, WorkloadParameters workloadParams, IAPIServer apiServer){
+    public static void runBenchmark(GraphParameters graphParams, WorkloadParameters workloadParams, IAPIServer apiServer, String logName){
 
-      Graph graph = SkewedDegreeGraph.makeSkewedDegreeGraph(graphParams); //TODO: change this
+      //Graph graph = SkewedDegreeGraph.makeSkewedDegreeGraph(graphParams); //TODO: change this
       //MetricsCollector omc = new LatencyTrackingAPIServer.LoggerCollector(graphParams, workloadParams);
       MetricsCollector omc = new LatencyTrackingAPIServer.InMemoryCollector(graphParams, workloadParams);
       IAPIServer api = new LatencyTrackingAPIServer(apiServer, omc);      
       
-      Iterator<Pair<Integer, int[]>> it = graph.fanoutIterator();
+      //Iterator<Pair<Integer, int[]>> it = graph.fanoutIterator();
       //Iterator<Edge> it = graph.graphIterator();
       omc.begin();
       
-      //log degrees for auditing later
-      Logger graphLogger = LoggerFactory.getLogger(Graph.class);      
-      for (int i = 0; i < graphParams.getNumberVertices();  ++i) graphLogger.debug("{}", ((SkewedDegreeGraph)graph).getDegree(i));
-      System.out.println("\n");
-      System.out.println("done logging graph");
+//      //log degrees for auditing later
+//      Logger graphLogger = LoggerFactory.getLogger(Graph.class);      
+//      for (int i = 0; i < graphParams.getNumberVertices();  ++i) graphLogger.debug("{}", ((SkewedDegreeGraph)graph).getDegree(i));
+//      System.out.println("\n");
+//      System.out.println("done logging graph");
+//      
+      //TODO: add call to reset all from here.
+//      int i = 0;      
+//      Ticker t = Ticker.systemTicker();
+//      while (it.hasNext()){
+//          long start = t.read();
+//          Pair<Integer, int[]> current = it.next();
+//          api.putFanout(current.getLeft(), current.getRight());
+//          i++;
+//      }
+//      System.out.println("done loading graph");
       
-      int i = 0;      
-      Ticker t = Ticker.systemTicker();
-      while (it.hasNext()){
-          long start = t.read();
-          Pair<Integer, int[]> current = it.next();
-          api.putFanout(current.getLeft(), current.getRight());
-          i++;
-      }
-      System.out.println("done loading graph");
+//      Iterator<Query> ot = graph.workloadIterator(workloadParams);
       
-      Iterator<Query> ot = graph.workloadIterator(workloadParams);     
+      //TODO: be more specific about the exception, at the work node level maybe?
+      logger.debug(String.format("logName: %s, numqueries: %d\n", logName, workloadParams.getNumberOfQueries()));
+      Iterator<Query> ot = new LogReplayBenchmark(logName, workloadParams.getNumberOfQueries());
       while (ot.hasNext()) {
-          ot.next().execute(api);   
+          Query q = ot.next();
+          List<Vertex> answer;
+          
+          try {
+              answer = q.execute(api);
+              logger.debug(q.toString());
+              logger.debug(answer.toString());
+          } catch (RuntimeException re){
+              logger.error(q.toString());
+          }
+          
       }
       
       omc.finish();

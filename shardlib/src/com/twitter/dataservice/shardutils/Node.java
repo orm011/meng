@@ -2,8 +2,11 @@ package com.twitter.dataservice.shardutils;
 
 import java.io.ByteArrayOutputStream;
 
-public class Node implements IByteSerializable
-{
+public class Node implements IByteSerializable{
+
+  public final static Node ZERO = new Node(0);    
+  public final static Node ONE = new Node(1);
+  
   int nodeNumber;
 
   public static Node getNode(int i){

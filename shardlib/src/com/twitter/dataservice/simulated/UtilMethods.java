@@ -3,6 +3,7 @@ package com.twitter.dataservice.simulated;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import com.google.common.primitives.Ints;
 import com.twitter.dataservice.shardutils.Node;
@@ -12,6 +13,8 @@ public class UtilMethods
 {
 
     public static int getInsertionIndex(int[] array, int key){
+        //System.out.println("getInsertionIndex: " + "array: " + Arrays.toString(array) + "key: " + key);
+        
         int searchi = Arrays.binarySearch(array, key);
         return (1 - (searchi >>> 31))*searchi + (searchi >>> 31)*(searchi ^ -1);
     }
@@ -41,8 +44,8 @@ public class UtilMethods
     }
     
     
-    public static Collection<Vertex> toVertexCollection(int[] ids){
-        Collection<Vertex> wrap = new ArrayList<Vertex>(ids.length);        
+    public static List<Vertex> toVertexCollection(int[] ids){
+        List<Vertex> wrap = new ArrayList<Vertex>(ids.length);        
         for (int id: ids){
             wrap.add(new Vertex(id));
         }

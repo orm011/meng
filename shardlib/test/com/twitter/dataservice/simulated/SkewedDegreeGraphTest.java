@@ -149,7 +149,7 @@ public class SkewedDegreeGraphTest
         
         Query nx = work.next();
         Assert.assertTrue(work.next() instanceof Query.FanoutQuery);
-        Assert.assertEquals(new Vertex(0), ((Query.FanoutQuery) nx).v);
+        Assert.assertEquals(new Vertex(0), ((Query.FanoutQuery) nx).getVertex());
     }
     
     /*

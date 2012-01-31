@@ -7,9 +7,13 @@ import java.io.IOException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.apache.log4j.PropertyConfigurator;
+
+import com.google.common.base.Ticker;
 import com.twitter.dataservice.remotes.IDataNode;
 import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Vertex;
@@ -22,7 +26,7 @@ public class WorkNodeMain
             System.out.println("usage: NodeName-[loadFile] [NodeName-[loadFile]...] ");
             System.exit(1);    
         }
-        
+                
         if (System.getSecurityManager() == null)
             System.setSecurityManager(new SecurityManager());
         
@@ -31,7 +35,9 @@ public class WorkNodeMain
             registry = LocateRegistry.createRegistry(1099);
             
             List<IDataNode> nodes = new LinkedList<IDataNode>();
-            
+         
+            Ticker t = Ticker.systemTicker();
+            long start = t.read();
             for (String namefile: argv){
                 String name = namefile.split("-")[0];
                 
@@ -51,6 +57,7 @@ public class WorkNodeMain
                 System.out.println("Success");
             }
             
+            System.out.println("loading done. time: " + (t.read() - start));
 //            while (true) {
 //                Thread.sleep(5000);
 //                System.out.println("sleeping..");
@@ -75,16 +82,15 @@ public class WorkNodeMain
             int leftid = Integer.parseInt(elts[0]);
             
             //System.out.println(leftid);
-            //System.out.println(elts[1]);
-            String[] fanoutstring= elts[1].split(" ");
-            int[] fanouts = new int[fanoutstring.length];
-            int i = 0;
-            for (String num: fanoutstring){
-                fanouts[i] = Integer.parseInt(num);
-                i++;
+            //System.out.println(Arrays.toString(elts));
+            int[] fanouts = new int[elts.length - 1];
+            int i;
+            for (i = 0; i < fanouts.length; i++){
+                fanouts[i] = Integer.parseInt(elts[i+1]);
             }
-
-            node.putFanout(leftid, fanouts);
+            
+            //System.out.println("putting fanout: " + leftid + " " + Arrays.toString(fanouts));
+            node.localPutFanout(leftid, fanouts);
         }  
     } catch (FileNotFoundException e)
     {

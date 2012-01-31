@@ -4,9 +4,27 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Collection;
 
+@SuppressWarnings("serial")
 public class Vertex implements IByteSerializable, Serializable
 {
+    public final static Vertex ZERO = new Vertex(0);
+    public final static Vertex ONE = new Vertex(1);
+    public final static Vertex TWO = new Vertex(2);
+
+    public static int[] toIntArray(Collection<Vertex> col){
+        int[] answer = new int[col.size()];
+        
+        int pos = 0;
+        for (Vertex v : col){
+            answer[pos] = v.getId();
+            pos++;
+        }
+        
+        return answer;
+    }
+    
     final int id;
 
   public int getWorkFactor() {

@@ -72,20 +72,5 @@ public class LookupTableTest
             //when one fails, both fail, when one succeeds, both succeed
             Assert.assertTrue((actualfail && controlfail) || actualans.equals(controlans));
         }
-    }
-    
-    
-    /*
-     * used to check how big the lookup table gets for a given large workload as well as how long
-     * it takes to load (helps measure space improvements)
-     */
-    @Test
-    public void testLoadingLargeTable(){
-        LookupTableSharding lts = new LookupTableSharding("/Users/oscarm/workspace/oscarmeng/shardlib/lookup_table_4_parts.txt", 10000000, 1, " ");
-        Assert.assertEquals(Arrays.asList(new Node(2)), lts.getNodes(new Vertex(0)));
-        Assert.assertEquals(Arrays.asList(new Node(1)), lts.getNodes(new Vertex(187083281)));
-        Assert.assertEquals(Arrays.asList(new Node(3)), lts.getNodes(new Vertex(187083252)));
-    }
-    
-    
+    }   
 }

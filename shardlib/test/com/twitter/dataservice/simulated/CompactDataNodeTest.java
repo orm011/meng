@@ -14,6 +14,31 @@ import com.twitter.dataservice.shardutils.Vertex;
 public class CompactDataNodeTest
 {
     
+    
+    @Test
+    public void testFanout(){
+        CompactDataNode cdn = new CompactDataNode();
+        
+        int[] fanout1 = {2, 3, 4, 5, 6};
+        int[] fanout2 = {0,2,4,6,8,10,12};
+        int[] fanout3 = {0,3,6,9,12};
+        int[] fanout4 = {0,4,8,12,16};
+        
+        cdn.putFanout(1, fanout1);
+        cdn.putFanout(2, fanout2);
+        cdn.putFanout(3, fanout3);
+        cdn.putFanout(4, fanout4);
+
+        try {
+            Collection<Vertex> result1 =  getVertexList(cdn.getFanout(new Vertex(1), 10, -1));
+            Assert.assertTrue(result1.equals(getVertexList(fanout1)));
+
+            Collection<Vertex> result2 =  getVertexList(cdn.getFanout(new Vertex(2), fanout2.length, -1));
+            Assert.assertTrue(result2.equals(getVertexList(fanout2)));
+        } catch (RemoteException re ){
+            Assert.fail();
+        }
+    }
     /*
      * TODO: test other methods (currently tested it somewehere else)
      */

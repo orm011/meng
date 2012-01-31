@@ -1,6 +1,7 @@
 package com.twitter.dataservice.simulated;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
@@ -96,7 +97,7 @@ public class LatencyTrackingAPIServer implements IAPIServer
         public void finish()
         {   
             Logger logger = LoggerFactory.getLogger(MetricsCollector.class);   
-            for (long l: latencies) logger.debug("{}", l);
+            for (long l: latencies) logger.info("{}", l);
         }
 
         @Override
@@ -120,7 +121,10 @@ public class LatencyTrackingAPIServer implements IAPIServer
         @Override
         public void logIntersection(long timeStart, long timeEnd, Vertex arg1, Vertex arg2, int answer)
         {
-            throw new NotImplementedException();
+            int pos = endsPos.getAndIncrement();
+            ends[pos] = timeEnd;
+            latencies[pos] = timeEnd - timeStart;
+            latencies[pos] /= 1000;
         }
         
     };
@@ -135,25 +139,31 @@ public class LatencyTrackingAPIServer implements IAPIServer
     public Edge getEdge(Vertex v, Vertex w)
     {
         long start = System.nanoTime();
+        //System.out.println("getEdge: " + v + w);
         Edge ans = measuredServer.getEdge(v, w);
+        //System.out.println("answer: " + ans);
         collector.logEdge(start, System.nanoTime(), v, w, ans != null);
         return ans;
     }
 
     @Override
-    public Collection<Vertex> getFanout(Vertex v, int pageSize, int offset)
+    public List<Vertex> getFanout(Vertex v, int pageSize, int offset)
     {
         long start = System.nanoTime();
-        Collection<Vertex> ans = measuredServer.getFanout(v, Integer.MAX_VALUE, -1);
+        //System.out.printf("getFanout: %s, %d, %d\n", v, pageSize, offset);
+        List<Vertex> ans = measuredServer.getFanout(v, pageSize, offset);
+        //System.out.println("fanout ans: " + ans);
         collector.logFanout(start, System.nanoTime(), v, ans.size());
         return ans;
     }
 
     @Override
-    public Collection<Vertex> getIntersection(Vertex v, Vertex w, int pageSize, int offset)
+    public List<Vertex> getIntersection(Vertex v, Vertex w, int pageSize, int offset)
     {
         long start = System.nanoTime();
-        Collection<Vertex> ans = getIntersection(v, w, pageSize, offset);
+        //System.out.printf("getIntersection: %s, %s, %d, %d\n", v, w, pageSize, offset);
+        List<Vertex> ans = measuredServer.getIntersection(v, w, pageSize, offset);
+        //System.out.printf("intersectionAnswer: %s\n", ans);
         collector.logIntersection(start, System.nanoTime(), v, w, ans.size());
         return ans;
     }

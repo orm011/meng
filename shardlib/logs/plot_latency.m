@@ -62,10 +62,10 @@ step = 0.025*(maxy - miny);
 text(0.5*maxx, 0.5*maxy + 0*step, quantilestring);
 text(0.5*maxx, 0.5*maxy + 1*step, statstring);
 
-show_parameters(system, graph, workload)
+#show_parameters(system, graph, workload)
 graph_params = strsplit(graph, ' ', true);
 title_first = strsplit(titleval, ' ', true){1};
-print([title_first, graph_params{end}, '.pdf'], '-dpdf', '-landscape')
+#print([title_first, graph_params{end}, '.pdf'], '-dpdf', '-landscape')
 
 sleep(0.01); 
 quit;

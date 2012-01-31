@@ -1,0 +1,29 @@
+todo: fill up with file names and instructions.
+
+log:
+fanouts count per user (both skew graph)
+	offset
+	paging
+edges
+intersection
+
+intersection pairs (skew graph per pair) correlation?
+edge pairs(skew graph per pair)
+
+graph:
+indegree
+outdegree
+
+
+mixes:
+
+indegree fanouts
+indegree edges
+indegree intersection
+
+outdegree fanous
+outdegree edges
+outdegree intersections
+
+indegree vs. outdegree
+

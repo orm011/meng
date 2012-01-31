@@ -135,6 +135,7 @@ Other exploration: (from Madden)
 -define the random walk operation. eg take in 1 node. and return a dictionary of other nodes/relative weights.
 -is the random walk operaton more like an analitic query ('get random walk for everyone')
 
+
 -can generate full graph with forwards and backwards edge without remembering it (just remembering the counts)
  (this will be useful for generating actual graphs)
 
@@ -190,6 +191,18 @@ Partitioning in Apache Giraph. Master needs sorted list of vertices, generates r
 across at future steps of the step sequence of the model. 
 It supports balancing by # vertices, # edges or a supplied custom partitioner. (not sure if it can take into accoutn graph connectivity etc.), or if it can 
 do somethign thats not range partitioning.  (check?)
+-----
+
+Cassowary (check for upcoming blog post). stores graph in a single machine. will eventually need to be partitioned.
+interface:
+-cosine similarity
+-ranom walk on a node (get a weighted set of neighbors) -> personalized recommendations
+Real graph: (real time)
+-hadoop job. recent interactions, exponential decay. 9B edges
+out dist power law coeff is 2.1 
+in dist: coeff is 1.8
+
+
 
 
 \section{Benchmark design}
