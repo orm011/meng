@@ -1,0 +1,15 @@
+filename = 'operations_vs_degrees.tab'
+vec = fscanf(fopen(filename, 'r'), "%d\t%d");
+newvec = reshape(vec, 6, size(vec,1)/6)';
+
+newvec = newvec + ones(size(newvec,1), size(newvec,2));
+
+for i=2:5
+  for j=(i+1):6
+    figure
+    loglog(newvec(:,i), newvec(:,j), 'bo');
+    title(['log-log plot of column ', sprintf("%d",j), ' vs column ', sprintf("%d", i)]);
+    disp(corrcoef(log(newvec(:,i)), log(newvec(:,j))));
+    sleep(2)
+  end
+end

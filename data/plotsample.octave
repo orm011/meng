@@ -2,7 +2,7 @@
 %file: 'fanouts_vs_indeg' totalfanouts vs. indeg  (8872407,363304891,2511282880,330359765773,9835603636178,602803019834);
 %file: (in vs out degree) (127046986,5306800261,5306800261,16965381329095,10460091067833,10150176638990); 
 
-filename = 'fanouts_vs_indeg'
+filename = 'operations_vs_degree'
 vec = fscanf(fopen(filename, 'r'), "%d\t%d");
 newvec = reshape(vec, 2, size(vec,1)/2)';
 

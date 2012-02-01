@@ -1,0 +1,4 @@
+snapshot had 130million ids, 5 billion edges, ~8 billion unique pairs (dedup edges)
+metis input had 10million ids only ~800k edges
+
+

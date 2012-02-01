@@ -10,8 +10,6 @@ SimpleQuery_SimpleQuery_Intersection_SimpleQuery_Difference 0.0587889 99.9726
 SimpleQuery_SimpleQuery_Union 0.0273851 100
 ~380 million queries.
 
-cat *  | awk '{print $1,$2/(3770792.84),($1*$2)/(815439780.26)}' | grep -v 'e-' | sort -k 2nr | awk  'BEGIN {total2=0; total3=0} {total2+=$2; total3+=$3; print $1, $2, total2;}'
-
 types of fanout query by query frequency:
 note the large number of size 1 queries.
 1 60.1611 60.1611
@@ -23,17 +21,12 @@ note the large number of size 1 queries.
 20 1.81965 81.2563
 5 1.71838 82.9747
 10 1.58115 84.5558
-4 1.23909 85.7949
+4 1.23909 85.
+
+By far, most queries are  are of offset -1. (first element)
 
 
-1337653524532567107	1000
-1387117105021560274	1000
-1385563888922861783	1000
-1366930926177066966	1000
-1378127519985696762	1001
-1350215703397803324	1001
-1370972887334462301	1224
-2147483647		3369
-0			31779
--1			373406306 (in log that has about 377 million entries), most are of offset -1.
+snapshot had 130million ids, 5 billion edges, ~8 billion unique pairs (dedup edges)
+metis input had 10million ids only ~800k edges
+also see query log stats
 

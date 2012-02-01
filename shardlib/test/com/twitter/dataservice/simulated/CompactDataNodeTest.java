@@ -101,10 +101,12 @@ public class CompactDataNodeTest
         try {
             getVertexList(cdn.getIntersection(new Vertex(100), new Vertex(1), 100, 100));
             Assert.fail();
-        } catch (NullPointerException npe) { }
+        } catch (RemoteException re) {
+            //TODO: make it into its own kind of exception}
+        }
         
         } catch (RemoteException re){
-            Assert.fail();
+            
         }
     }
     

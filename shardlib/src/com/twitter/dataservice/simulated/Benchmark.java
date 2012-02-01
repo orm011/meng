@@ -138,7 +138,9 @@ public class Benchmark {
         INodeSelectionStrategy sh = null;
         System.out.println(policy);
         if (policy.equals("sharding.vertex")){
-            sh = new VertexHashSharding(numNodes);
+            Integer numShards = Integer.parseInt(prop.getProperty("vertex.numShards"));
+            System.out.println("numShards: " + numShards);
+            sh = new VertexHashSharding(numNodes, numShards);
         } else if (policy.equals("sharding.lookup")){
             String exceptions = prop.getProperty("lookup.exceptions");
             //change to make the 2 tier transparent?

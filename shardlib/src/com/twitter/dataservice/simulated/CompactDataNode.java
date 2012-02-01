@@ -67,7 +67,7 @@ public class CompactDataNode extends AbstractDataNode implements IDataNode
         log.info(String.format("getFanout: %s, %d, %d\n", v, pageSize, offset));;        
         int[] fullfanout = fanouts.get(v.getId());
         
-        if (fullfanout == null) throw new RemoteException(v.toString() + " not found");
+        if (fullfanout == null)  throw new RemoteException(v.toString() + " not found");
         
         int pos = UtilMethods.getInsertionIndex(fullfanout, offset);
         int[] result = Arrays.copyOfRange(fullfanout, pos, Ints.min(new int[]{pos + pageSize, fullfanout.length}));
@@ -82,6 +82,9 @@ public class CompactDataNode extends AbstractDataNode implements IDataNode
 
         int[] vfanout = fanouts.get(v.getId());
         int[] wfanout = fanouts.get(w.getId());
+        
+        String vertices = (vfanout == null? v.toString():"") + " " + (wfanout == null? w.toString():"");
+        if (vfanout == null || wfanout == null) throw new RemoteException(vertices + " not found");
         
         return UtilMethods.intersectSortedUniqueArraySet(vfanout, wfanout, pageSize, offset);
     }
