@@ -24,5 +24,9 @@ deploy-conf:
 	scp -r -q Benchmark.properties *og4j.properties server.policy runmany.sh Makefile smf1-agm-35-sr1:~
 
 #machines smf1-agn-11-sr1 smf1-agm-15-sr1 smf1-agn-29-sr1 smf1-agq-31-sr1 smf1-agt-31-sr1 smf1-agm-35-sr1
-#java -cp ./bin/  -Djava.security.policy=server.policy -Djava.rmi.server.codebase=file:./bin/ com.twitter.dataservice.simulated.WorkNodeMain node0-
+
+#example work node command:
+#java -cp ./bin/:./lib/commons-math-2.2.jar:./lib/junit-4.10.jar:./lib/log4j-1.2.16.jar:./lib/slf4j-api-1.6.4.jar:./lib/slf4j-log4j12-1.6.4.jar:./lib/guava-11.0.1.jar -Djava.security.policy=server.policy -Djava.rmi.server.codebase=file:./bin/ com.twitter.dataservice.simulated.WorkNodeMain node0-lookuptablehashbackwardpart0 &
+
+#server:
 #java -cp ./bin/:./lib/commons-math-2.2.jar:./lib/junit-4.10.jar:./lib/log4j-1.2.16.jar:./lib/slf4j-api-1.6.4.jar:./lib/slf4j-log4j12-1.6.4.jar:./lib/guava-11.0.1.jar -Djava.security.policy=server.policy -Djava.rmi.server.codebase=file:./bin/ com.twitter.dataservice.simulated.Benchmark log4j.properties Benchmark.properties
