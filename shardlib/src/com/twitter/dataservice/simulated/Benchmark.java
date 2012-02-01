@@ -8,6 +8,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -139,12 +140,19 @@ public class Benchmark {
         System.out.println(policy);
         if (policy.equals("sharding.vertex")){
             Integer numShards = Integer.parseInt(prop.getProperty("vertex.numShards"));
-            System.out.println("numShards: " + numShards);
+            System.out.println("numShards: " + numShards);      
             sh = new VertexHashSharding(numNodes, numShards);
         } else if (policy.equals("sharding.lookup")){
-            String exceptions = prop.getProperty("lookup.exceptions");
+            String exceptionsFile = prop.getProperty("lookup.exceptions");
             //change to make the 2 tier transparent?
-            sh = new LookupTableSharding(exceptions, ROUGHNUMLOOKUP, numNodes, "\t");
+
+            //NOTE: this way of construction may be wrong if the exceptions passed to special are somehow
+            //different to the ones passed to lookuptable
+            INodeSelectionStrategy special = new LookupTableSharding(exceptionsFile, ROUGHNUMLOOKUP, "\t");
+            int[] specialids = loadExceptionFile(exceptionsFile);
+            System.out.println("exceptions: " + Arrays.toString(Arrays.copyOf(specialids, 5)));
+            System.out.println("exceptions size: " + specialids.length);
+            sh = new SimpleTwoTierSharding(new VertexHashSharding(numNodes, 1), special, specialids);
         } else if (policy.equals("sharding.twoTier")){
             Integer numShards = Integer.parseInt(prop.getProperty("twoTier.numShards"));
             logger.info("numShards: " + numShards);

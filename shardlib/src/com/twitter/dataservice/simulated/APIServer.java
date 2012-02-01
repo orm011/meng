@@ -149,13 +149,15 @@ public class APIServer implements IAPIServer
         
     public static class FanoutTask implements Callable<int[]> {
         IDataNode rn;
+        Node n;
         Vertex v;
         int pageSize;
         int offset;
         
         
-        public FanoutTask(IDataNode rn, Vertex v, int pageSize, int offset){
+        public FanoutTask(IDataNode rn, Node n, Vertex v, int pageSize, int offset){
             this.rn = rn;
+            this.n = n;
             this.v = v;
             this.pageSize = pageSize;
             this.offset = offset;
@@ -169,7 +171,7 @@ public class APIServer implements IAPIServer
         
         @Override
         public String toString(){
-            return String.format("FanoutTask: Vertex: %s, pageSize: %d, offset: %d",  v, pageSize, offset);
+            return String.format("FanoutTask: %s, %s, pageSize: %d, offset: %d", n, v, pageSize, offset);
         }
     };
 
@@ -186,19 +188,21 @@ public class APIServer implements IAPIServer
         //gather
         int i = 0;
         for (Future<int[]> ft: futures){
-            
+            Iterator<Integer> curr = Iterators.emptyIterator();
             try {
-                results.add(Ints.asList(ft.get()).iterator());
+                curr = Ints.asList(ft.get()).iterator();
+                log.debug("Success at task: {}", tasks.get(i));
             } catch (InterruptedException e)
             {
                 log.debug("InterruptedException: {}. At task {} for node at position {}", new Object[]{e, tasks.get(i), i});
-                throw new RuntimeException(e);
+                //throw new RuntimeException(e);
             } catch (ExecutionException e)
             {
                 log.debug("ExecutionException: {}. At task {} for node at positon {}", new Object[]{e, tasks.get(i), i});
-                throw new RuntimeException(e);
+                //throw new RuntimeException(e);
             }
             
+            results.add(curr);
             i++;
         }
 
@@ -212,13 +216,17 @@ public class APIServer implements IAPIServer
      */
     public List<Vertex> getFanout(Vertex v, int pageSize, int offset) {
       if (shardinglib instanceof TwoTierHashSharding) throw new UnsupportedOperationException("Don't use the old TwoTierHashSharding: deprecated");
-       
+      
+      log.debug("using sharding lib: {}", shardinglib);
       Collection<Node> destinations = shardinglib.getNodes(v);
-
       log.debug("fanoutQ for vertex: {}, destinations are: {}", v, destinations);
+      log.info("this is code version is modifed for debugging, sends request to all nodes");
+      destinations = nodes.keySet();
+      
+      log.debug("fanoutQ for vertex: {}, OVERRIDING: destinations are: {}", v, destinations);
       List<Callable<int[]>> fanoutTasks = new ArrayList<Callable<int[]>>(destinations.size());
       for (Node n: destinations){
-          fanoutTasks.add(new FanoutTask(nodes.get(n), v, pageSize, offset));
+          fanoutTasks.add(new FanoutTask(nodes.get(n), n, v, pageSize, offset));
       }
       
       Iterator<Integer> merged = sortedScatterGather(fanoutTasks, executor);

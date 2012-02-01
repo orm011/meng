@@ -20,7 +20,7 @@ public class LookupTableTest
      */
     @Test
     public void testLoadingCorrect(){
-        LookupTableSharding lts = new LookupTableSharding("/Users/oscarm/workspace/oscarmeng/shardlib/test/com/twitter/dataservice/sharding/testpartition.part", 1, 1, "\t");
+        LookupTableSharding lts = new LookupTableSharding("/Users/oscarm/workspace/oscarmeng/shardlib/test/com/twitter/dataservice/sharding/testpartition.part", 1, "\t");
         Assert.assertEquals(Node.getNode(1), lts.getNode(new Vertex(2), new Vertex(4)));
         Assert.assertEquals(Node.getNode(2), lts.getNode(new Vertex(4), new Vertex(1)));
         
@@ -48,7 +48,7 @@ public class LookupTableTest
         int[] nodes = {1, 2, 3, 4};
 
         LookupTableSharding lts = new LookupTableSharding(keys, nodes);
-        LookupTableSharding control = new LookupTableSharding("/Users/oscarm/workspace/oscarmeng/shardlib/test/com/twitter/dataservice/sharding/testpartition.part", 1, 1, "\t");
+        LookupTableSharding control = new LookupTableSharding("/Users/oscarm/workspace/oscarmeng/shardlib/test/com/twitter/dataservice/sharding/testpartition.part", 1, "\t");
 
         for (int i = 0; i < keys[keys.length - 1] + 1; i++){
             Vertex curr = new Vertex(i);

@@ -25,7 +25,7 @@ public class LookupTableSharding implements INodeSelectionStrategy
     /*
      * load partition from tab separated file
      */
-    public LookupTableSharding(String partitionFile, int expectedSize, int numNodes, String separator){
+    public LookupTableSharding(String partitionFile, int expectedSize, String separator){
         table = new HashMap<Integer, Byte>(expectedSize);
         
         BufferedReader reader;        
@@ -73,8 +73,9 @@ public class LookupTableSharding implements INodeSelectionStrategy
     public Collection<Node> getNodes(Vertex v)
     {
         Byte node = table.get(v.getId());
-                
+
         if (node == null){
+            System.out.println("WARNING: missing lookup. This should not be being called for vertex " + v);
             throw new IllegalArgumentException("vertex not in table");
         } else {
             return UtilMethods.toNodeCollection(new byte[]{node});
