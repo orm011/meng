@@ -4,12 +4,19 @@ newvec = reshape(vec, 6, size(vec,1)/6)';
 
 newvec = newvec + ones(size(newvec,1), size(newvec,2));
 
+names = {"id", "edgeq", "intersectionq", "fanoutq", "outdeg", "indeg"};
+
+
 for i=2:5
   for j=(i+1):6
     figure
     loglog(newvec(:,i), newvec(:,j), 'bo');
-    title(['log-log plot of column ', sprintf("%d",j), ' vs column ', sprintf("%d", i)]);
-    disp(corrcoef(log(newvec(:,i)), log(newvec(:,j))));
+    corr = corrcoef(log(newvec(:,i)), log(newvec(:,j)));
+    name=["LOG-LOG-plot-of-", names{j}, "-vs-", names{i}, "-log-correl:", sprintf("%.2f", corr) ]
+    title(name);
+    xlabel(names{i});
+    ylabel(names{j});
     sleep(2)
+    print([name, ".png"], '-dpng')
   end
 end
