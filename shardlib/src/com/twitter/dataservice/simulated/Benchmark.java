@@ -9,16 +9,23 @@ import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Ticker;
+import com.google.common.primitives.Ints;
 import com.twitter.dataservice.remotes.IDataNode;
+import com.twitter.dataservice.sharding.INodeSelectionStrategy;
+import com.twitter.dataservice.shardingpolicy.LookupTableSharding;
 import com.twitter.dataservice.shardingpolicy.SimpleTwoTierSharding;
 import com.twitter.dataservice.shardingpolicy.TwoTierHashSharding;
 import com.twitter.dataservice.shardingpolicy.VertexHashSharding;
@@ -125,32 +132,105 @@ public class Benchmark {
             ports[i] = addressWithPort[1];
         }
         
-        int numShardsPerException; // = Integer.parseInt(prop.getProperty(NUM_SHARDS_PER_EXCEPTION));
-        int numExceptions; // = Integer.parseInt(prop.getProperty(NUM_EXCEPTIONS));
- 
-        //NOTE: remove this for longer term experiments. for now this is reasonable
-        numShardsPerException = SystemParameters.instance().numDataNodes;
-        numExceptions = gp.getNumberVertices();
+        String policy = prop.getProperty("system.shardingPolicy");         
+        int ROUGHNUMLOOKUP = 9000000; //abt 9 million in lookup table
         
+        INodeSelectionStrategy sh = null;
+        System.out.println(policy);
+        if (policy.equals("sharding.vertex")){
+            sh = new VertexHashSharding(numNodes);
+        } else if (policy.equals("sharding.lookup")){
+            String exceptions = prop.getProperty("lookup.exceptions");
+            //change to make the 2 tier transparent?
+            sh = new LookupTableSharding(exceptions, ROUGHNUMLOOKUP, numNodes, "\t");
+        } else if (policy.equals("sharding.twoTier")){
+            Integer numShards = Integer.parseInt(prop.getProperty("twoTier.numShards"));
+            logger.info("numShards: " + numShards);
+            String exceptions = prop.getProperty("twoTier.exceptions");
+            logger.info("exceptions form file: " + exceptions);
+            int[] specialids = loadExceptionFile(exceptions);
+            sh = new SimpleTwoTierSharding(new VertexHashSharding(numNodes), 
+                    new VertexHashSharding(numNodes, numShards), specialids);
+        } else {
+            throw new RuntimeException(String.format("invalid system.shardingPolicy: %s", policy));
+        }
+        
+        logger.info(sh.getClass().getCanonicalName());
+
         Map<Node, IDataNode> nodes = APIServer.getRemoteNodes(names, address, ports);
-        //TODO: instantiate desired sharding policy from file here        
-        int[] exceptions = new int[numExceptions];
-        for (int i = 0; i < exceptions.length; i++){exceptions[i] = i;}
-        
-        VertexHashSharding sh = new VertexHashSharding(nodes.size());
-//        SimpleTwoTierSharding sh = new SimpleTwoTierSharding(nodes.size(), exceptions, numShardsPerException);
-        
-//        TwoTierHashSharding sh = TwoTierHashSharding.makeTwoTierHashFromNumExceptions(
-//                numExceptions, 
-//                nodes, 
-//                numOrdinaryShards, 
-//                numShardsPerException, 
-//                numNodesPerException);        
-//        IAPIServer apiServer = APIServer.makeServer(nodes, sh);        
-        
         IAPIServer apiServer = new APIServer(nodes, sh);
         runBenchmark(gp, wp, apiServer, logName);
         System.exit(0);
+    }
+    
+    
+    public static int[] loadExceptionFilePar(String filename, int num){
+        //format is %id\t...whatever else 
+
+        List<ArrayList<Integer>> arrays = new LinkedList<ArrayList<Integer>>();
+        //TODO: add initial arrays
+        ExecutorService es = Executors.newFixedThreadPool(num);
+        
+        ArrayList<Integer> accumulator = new ArrayList<Integer>();
+        
+        BufferedReader br;
+        try
+        {
+            br = new BufferedReader(new FileReader(filename));
+        } catch (FileNotFoundException e)
+        {
+            throw new RuntimeException(e);
+        }
+        
+        String current;
+        try
+        {
+            while ((current = br.readLine()) != null){
+                String[] parts = current.split("[\t| ]", 2);
+                accumulator.add(Integer.parseInt(parts[0]));
+            }
+        } catch (NumberFormatException e)
+        {
+            throw new RuntimeException(e);
+        } catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+        
+        return Ints.toArray(accumulator);        
+    }
+    
+    
+    public static int[] loadExceptionFile(String filename){
+        //format is %id\t...whatever else 
+        
+        ArrayList<Integer> accumulator = new ArrayList<Integer>();
+        
+        BufferedReader br;
+        try
+        {
+            br = new BufferedReader(new FileReader(filename));
+        } catch (FileNotFoundException e)
+        {
+            throw new RuntimeException(e);
+        }
+        
+        String current;
+        try
+        {
+            while ((current = br.readLine()) != null){
+                String[] parts = current.split("[\t| ]", 2);
+                accumulator.add(Integer.parseInt(parts[0]));
+            }
+        } catch (NumberFormatException e)
+        {
+            throw new RuntimeException(e);
+        } catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+        
+        return Ints.toArray(accumulator);        
     }
     
     public static final String NUM_ORDINARY_SHARDS = "sharding.numOrdinaryShards";
@@ -200,11 +280,11 @@ public class Benchmark {
           List<Vertex> answer;
           
           try {
-              answer = q.execute(api);
               logger.debug(q.toString());
+              answer = q.execute(api);
               logger.debug(answer.toString());
           } catch (RuntimeException re){
-              logger.error(q.toString());
+              logger.error("{} for query: {}", re.getMessage(), q);
           }
           
       }

@@ -34,6 +34,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 /*
@@ -46,6 +49,9 @@ struct Page {
 
 public class APIServer implements IAPIServer
 {
+    
+    private static Logger log = LoggerFactory.getLogger(APIServer.class);
+    
     public static int DEFAULT_PREALLOC_SIZE = 20; // median fanout size
     //TODO: make it api have interface like an individual node?;
     Map<Node, IDataNode> nodes = new HashMap<Node, IDataNode>();
@@ -140,12 +146,13 @@ public class APIServer implements IAPIServer
             return rn.getIntersection(v, w, pageSize, offset);
         }
     }
-    
+        
     public static class FanoutTask implements Callable<int[]> {
         IDataNode rn;
         Vertex v;
         int pageSize;
         int offset;
+        
         
         public FanoutTask(IDataNode rn, Vertex v, int pageSize, int offset){
             this.rn = rn;
@@ -160,6 +167,10 @@ public class APIServer implements IAPIServer
             return rn.getFanout(v, pageSize, offset);
         }
         
+        @Override
+        public String toString(){
+            return String.format("FanoutTask: Vertex: %s, pageSize: %d, offset: %d",  v, pageSize, offset);
+        }
     };
 
     public Iterator<Integer> sortedScatterGather(List<Callable<int[]>> tasks, ExecutorService es){
@@ -173,16 +184,22 @@ public class APIServer implements IAPIServer
         }
          
         //gather
+        int i = 0;
         for (Future<int[]> ft: futures){
+            
             try {
                 results.add(Ints.asList(ft.get()).iterator());
             } catch (InterruptedException e)
             {
+                log.debug("InterruptedException: {}. At task {} for node at position {}", new Object[]{e, tasks.get(i), i});
                 throw new RuntimeException(e);
             } catch (ExecutionException e)
             {
+                log.debug("ExecutionException: {}. At task {} for node at positon {}", new Object[]{e, tasks.get(i), i});
                 throw new RuntimeException(e);
             }
+            
+            i++;
         }
 
         //merge in sorted order
@@ -198,6 +215,7 @@ public class APIServer implements IAPIServer
        
       Collection<Node> destinations = shardinglib.getNodes(v);
 
+      log.debug("fanoutQ for vertex: {}, destinations are: {}", v, destinations);
       List<Callable<int[]>> fanoutTasks = new ArrayList<Callable<int[]>>(destinations.size());
       for (Node n: destinations){
           fanoutTasks.add(new FanoutTask(nodes.get(n), v, pageSize, offset));

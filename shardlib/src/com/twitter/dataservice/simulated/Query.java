@@ -133,7 +133,7 @@ public abstract class Query {
         
         @Override
         public List<Vertex> execute(IAPIServer api){
-            return Collections.EMPTY_LIST;
+            return Collections.emptyList();
         }
         
         public String toString(){

@@ -83,7 +83,12 @@ public class LogReplayBenchmarkTest
     @Test
     public void checkTabSeparated(){
         LogReplayBenchmark lrb = new LogReplayBenchmark("/Users/oscarm/workspace/oscarmeng/shardlib/test/com/twitter/dataservice/simulated/testworkload.workload", 3);
+        Query q = lrb.next();
         Assert.assertTrue(lrb.next() instanceof Query.FanoutQuery);
+        Query.FanoutQuery r = (Query.FanoutQuery)q;
+        Assert.assertEquals(new Vertex(17), ((Query.FanoutQuery)r).getVertex());
+        Assert.assertEquals(29, ((Query.FanoutQuery)r).getPageSize());
+        Assert.assertEquals(-1, ((Query.FanoutQuery)r).getOffset());
     }
     
     @Test

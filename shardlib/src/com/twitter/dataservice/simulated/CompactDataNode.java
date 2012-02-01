@@ -66,10 +66,11 @@ public class CompactDataNode extends AbstractDataNode implements IDataNode
     {     
         log.info(String.format("getFanout: %s, %d, %d\n", v, pageSize, offset));;        
         int[] fullfanout = fanouts.get(v.getId());
+        
+        if (fullfanout == null) throw new RemoteException(v.toString() + " not found");
+        
         int pos = UtilMethods.getInsertionIndex(fullfanout, offset);
-        
         int[] result = Arrays.copyOfRange(fullfanout, pos, Ints.min(new int[]{pos + pageSize, fullfanout.length}));
-        
         log.info(String.format("fanout answer: " + Arrays.toString(result)));
         return result;
     }
