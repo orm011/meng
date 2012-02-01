@@ -1,0 +1,9 @@
+-rw-rw----  1 oscarm  staff    60841 Jan 26 22:00 commons-logging-commons-logging-1.1.1.jar
+-rw-r-----  1 oscarm  staff   988514 Dec  2 14:18 commons-math-2.2.jar
+-rw-r--r--@ 1 oscarm  staff  1649781 Jan 25 13:11 guava-11.0.1.jar
+-rw-rw----@ 1 oscarm  staff  3740200 Jan 26 22:02 hadoop-core-1.0.0.jar
+-rw-r-----@ 1 oscarm  staff   253160 Dec  2 14:18 junit-4.10.jar
+-rw-r-----@ 1 oscarm  staff   481534 Dec  2 14:18 log4j-1.2.16.jar
+-rw-r--r--  1 oscarm  staff  9387649 Jan 26 15:41 pig-withouthadoop-0.9.2+10.jar
+-rw-r-----@ 1 oscarm  staff    25962 Dec  2 14:19 slf4j-api-1.6.4.jar
+-rw-r-----@ 1 oscarm  staff     9748 Dec  2 14:19 slf4j-log4j12-1.6.4.jar
