@@ -24,9 +24,24 @@
 
 \section{Overview}
 
-There are three main types of operations expected of the graph store, or a graph store in general. One is querying for edge data {\code getEdge(v,w)}, another one is for fan-out {\code getFanout(v)}, another for intersections of the neighbrohoods of two nodes {\code getIntersection(v,w)}. There is also a tentative random walk one that I am yet to actually look into.  A real workload is made of a mix of these queries, but  I am thinking of  partitioning strategies by starting with one of the operations and thinking backward to something that would improve their performance. For that reason, the benchmarks I have in mind are: 100\% \edgeq, 100\% \fanoutq, 100\% \intersectq and a mix
-with realistic twitter proportions. \todonote[fancyline]{put workload numbers from wiki here}. 
+At Twitter, there are three main types of query operations expected of the graph store interface. One is querying for edge metadata given the two endpoints {\code getEdge(v,w)}. Metadata includes values such as a timestamp for when the edge was created, and qualifiers for edge such as whether this represents a simple 'follow', or also a  'follow via sms', or even a ''blocked'. Edges are directed, and there need not be symmetry.  A follows B does not imply B follows A, but A follows B is a fact that may be queired via both A and B. At the application level, this enables the site to inform the user  'do I follow person B?' by displaying this fact on a user's profile, or by coloring the 'Follow' button differently to indicate this is already the case.   
 
+The second one is, given a vertex, return all its adjacent vertices. In a directed graph, there are two directions
+to choose from. Moreover, there are variations on this, we can ask for user given number of vertices, for example the latest one, or all the   {\code getFanout(v)}, The fanout operation with a limited page size enables site visitors to look at the first few followers as well as the first few people a person follows.   Most importantly, the fanout operation enables tweet routing and delivery. Depending on the timeline materialization strategy, Whenever @LadyGaga tweets, the effects of that action must be propagated to @omoll and  everyone else following her in a way that allows for later retrieval.  Or alternatively whenver @ladyGaga signs into the service, tweets from all the people she follows can be retrieved and merged to materilize her timeline. Either of these methods, or a hybrid strategy, need of the fanout operation.
+
+Finally the third query operation is the intersection of the neighbors of two nodes: {\code getIntersection(v,w)}.
+There are several important use cases for this operation. When a user visits a friends page, we may want to show a limited set of common friends.  When a user visits a stranger's profile page, it may be useful to show them friends that already are following that stranger to encourage a follow.
+
+Semantics of intersection: just like getting the fanouts we wish, and then intersecting them outside.
+The only update is to add, modify or delete an edge or its metadata.
+
+% other compelling uses of the store could be discussed. eg naive recommendation., more complicated 
+
+A real workload is made of a mix of these queries and updates. Based on the query logs, the most   query My thesis focuses on the effect different partitioning techniques have on performance. The measure I use for performance is the latency of the individual queries.  
+
+but  I am thinking of  partitioning strategies by starting with one of the operations and thinking backward to something that would improve their performance. For that reason, the benchmarks I have in mind are: 100\% \edgeq, 100\% \fanoutq, 100\% \intersectq and a mix
+with realistic twitter proportions. \todonote[fancyline]{put workload numbers from wiki here}. 
+xo
 The thoughts on strategies are here:
 
 \begin{enumerate}
