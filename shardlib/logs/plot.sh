@@ -17,13 +17,14 @@
 
 if [[ $# < 1 ]]
 then
-   echo "usage $0 --[latency|throughput|degree] NumberOfRowsToRead maxX maxY fileName"
+   echo "usage $0 --[latency|throughput|degree] NumberOfRowsToRead maxX maxY fileName titlestring"
    exit 0
 fi
 
 MAXX=$3
 MAXY=$4
 FILE=$5
+TITLE=$6
 
 SYSTEMMARKER='SystemParameters'
 GRAPHMARKER='GraphParameters'
@@ -48,7 +49,7 @@ if [[ $1 == --latency ]]
 then
 echo 'latencyplot'
 cat $FILE | grep $QUERYDATA | awk '{print $7}' |\
-octave --silent plot_latency.m "$SYSTEM" "$GRAPH" "$WORKLOAD" 'latency (musec)' 'latency histogram' $MAXX $MAXY
+octave --silent plot_latency.m "$SYSTEM" "$GRAPH" "$WORKLOAD" 'latency (musec)' "$TITLE latency histogram" $MAXX $MAXY
 else
 if [[ $1 == --throughput ]]
 then

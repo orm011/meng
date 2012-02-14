@@ -20,36 +20,33 @@ titleval = args{5};
 x = fscanf(stdin, "%d");
 
 if length(args) < max_argc
-maxfreq = length(x);
-maxnumber = max(x);
-maxy = maxfreq*0.5;
-maxx = 1.2*maxnumber;
+  maxfreq = length(x);
+  maxnumber = max(x);
+  maxy = maxfreq*0.5;
+  maxx = 1.2*maxnumber;
 else
-maxx = sscanf(args{max_argc - 1}, "%d");
-maxy = sscanf(args{max_argc}, "%d");
+  maxx = sscanf(args{max_argc - 1}, "%d");
+  maxy = sscanf(args{max_argc}, "%d");
 end
 
-%%
 %get quantiles before zooming in
-quantiles = [0, 50, 90, 99, 99.9, 99.99, 100]/100;
+quantiles = [50, 90, 99, 99.9]/100;
+
+disp(['num of zero valued entries:' , sprintf("%d", sum(x(x==0)))])
+x = x(x>0);
 stats = quantile(x, quantiles);
+joint = [quantiles; stats'];
 
-quantilestring = sprintf("%.1f %.1f %.1f %.2f %.3f %.4f %.4f", quantiles);
-statstring = sprintf("%.1f %.1f %.1f %.1f %.1f %.1f %.1f", stats);
-
-disp(['quantiles: ', quantilestring])
-disp(['values: ', statstring]);
-
-%select only desired range
-disp(['total number of values: ', sprintf("%d",size(x,1))])
+totaln = length(x);
 
 x = x(find(x < maxx));
-disp(['total included in plot window: ', sprintf("%d", size(x,1))])
+disp(['fracton of points included in plot window: ', sprintf("%d/%d", length(x),totaln)])
+
 assert(size(x,1) > 0, 'too few values in window. modify maxx param');
 
-hist(x,50);
-ylabel('frequency');
-xlabel(xlabelval);
+hist(x, 50, 100);
+ylabel('frequency (\%)');
+xlabel("latency (micro sec)");
 title(titleval, 'fontsize', 10);
 
 miny = -0.3*maxy; 
@@ -59,13 +56,18 @@ xlim([minx, maxx]);
 ylim([miny, maxy]);
 
 step = 0.025*(maxy - miny);
-text(0.5*maxx, 0.5*maxy + 0*step, quantilestring);
-text(0.5*maxx, 0.5*maxy + 1*step, statstring);
+
+text(0.4*maxx, 0.7*maxy + 1*step, sprintf("n = %d (%.0f%% displayed)", totaln, 100*length(x)/totaln));
+text(0.4*maxx, 0.7*maxy - 0*step, 'quantiles:');
+for i=1:size(joint,2)
+  quantilestring = sprintf("%.3f : %.0f", joint(:,i));
+  text(0.4*maxx, 0.7*maxy - (i)*step, quantilestring);
+end 
 
 #show_parameters(system, graph, workload)
 graph_params = strsplit(graph, ' ', true);
 title_first = strsplit(titleval, ' ', true){1};
-#print([title_first, graph_params{end}, '.pdf'], '-dpdf', '-landscape')
+print([title_first, '.png'], '-dpng', '-landscape')
 
-sleep(0.01); 
+sleep(30); 
 quit;
