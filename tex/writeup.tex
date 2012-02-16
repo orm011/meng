@@ -21,7 +21,6 @@
 
 \bibliographystyle{alpha}
 
-
 \section{Overview}
 
 At Twitter, there are three main types of query operations expected of the graph store interface. One is querying for edge metadata given the two endpoints {\code getEdge(v,w)}. Metadata includes values such as a timestamp for when the edge was created, and qualifiers for edge such as whether this represents a simple 'follow', or also a  'follow via sms', or even a ''blocked'. Edges are directed, and there need not be symmetry.  A follows B does not imply B follows A, but A follows B is a fact that may be queired via both A and B. At the application level, this enables the site to inform the user  'do I follow person B?' by displaying this fact on a user's profile, or by coloring the 'Follow' button differently to indicate this is already the case.   

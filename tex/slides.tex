@@ -1,0 +1,103 @@
+\documentclass[compress,red]{beamer}
+%\mode<presentation>
+\usetheme{Warsaw}
+
+\useoutertheme[subsection=false]{smoothbars}
+
+\begin{document}
+
+\section[Outline]{}
+\frame{\tableofcontents}
+
+\section{System description}
+%interface
+%my implementation
+%
+
+\section{Motivation for approaches}
+
+\section{Experiments and results}
+
+
+\subsection{data}
+\frame{\frametitle{Graph}
+\begin{enumerate}
+\item Twitter data = graph snapshot + actual query logs 
+\item Graph \~ 100 million users, 5 billion directed edges. (snapshot from some time ago).
+\item Degree distribution: both indegree and outdegree have power law shaped dist 
+with coeff about 1.8, 2.1 respectively. Larger coeff means less extreme degrees.
+\item Max indegree in snapshot was ~ 1 million, avg ~ 40, min ~ 1.
+\end{enumerate}
+}
+%lots of repeated edges. 8 billion after removing duplicates from 10 billion.
+%plots, indeg vs. outdeg.
+
+\frame{\frametitle{Logs}
+\begin{enumerate}
+\item fanout(vertex, inward/outward, small, -1)  70\%. (ie, asking for the first follower). Did not log inward/outward.
+\item fanout(vertex, inward/outward, between 1000 and 5000, -1) 10\%
+\item intersection: 1.5\%
+\item edges: 0.5\%
+\item not included in log: counts, writes.
+\end{enumerate}
+}
+%more info at flockdb github
+
+%how do these graph's evolve, what problems will become more striking.
+
+}
+%workload and graph
+\subsection{results with real data}
+
+\frame{\frametitle{Results on Twitter Data}
+\vspace{0.25cm}
+\begin{enumerate}
+
+\item three main methods for fanout queries: all shards (in this case only 5 though), two-tier ( ie above 20k deg all shards, below, one shard), vertex hash (control)
+\item and three for intersection: workload driven (graph partitioning based on historic log), all-shards, vertex.
+\item short story: methods visibly improve latency and show expected effects, 
+\item caveat: tuning error means I did not use two-tier optimally. 
+\item caveat: intersections training set and testing set were the same. (needed to sanity check it worked in that case)
+\end{enumerate}
+
+}
+
+%now plots.
+
+\subsection{synthetic data}
+\subsection{results with synthetic data}
+
+\section{Work done}
+\subsection{background info gathering}
+%current system? dewitt paper, other graph related: pregel, 
+%neo4j, one-hop replication, telefonica papers, (see collection)
+%partitioning in general, graph properties
+
+\subsection{programming}
+%java, RMI, data collection infrastructure, testing,  loading,
+%benchmark and graph generation, Pig Latin for data analysis,
+%some work that came to nothing.(hash ring), configuration.
+%lines of code? + tests?, lines of pig?
+%wrote notes
+%METIS, metis problem debugging
+
+\subsection{issues}
+%synthetic load problem with parallelism. 
+%limited info on intersections on real graph.
+
+\subsection{optimizing}
+%space for real graph, java native structure overhead, loading graph, 
+%sorted arrays structures vs. trees., rmi serialization
+
+\section{work pending}
+%other operations? eg more general set operations.
+%focused on getting to use real data etc., now no access, but time
+% to explore other ideas, using synthetic benchmarks.
+% work on the cost model approach to tuning two-tier
+% with that, repeat synthetic data experiments, need to figure out where.
+% explore other ideas, such as:
+% optimizing for intersections online?
+% cacheing as an approach to statistical regularity?
+% writing first draft, getting feedback, getting aproval. dates?
+
+\end{document}

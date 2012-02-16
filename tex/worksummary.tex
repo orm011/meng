@@ -4,8 +4,15 @@
 \usepackage{amssymb}
 \usepackage{amsthm}
 \usepackage{epsfig}
-\usepackage{psfig}
-\usepackage{hyperref}
+%\usepackage{subfig}
+\usepackage{pdflscape} 
+\usepackage{subfigure}
+%note: \begin{landscape} \end{landscape} and \subfloat[]{} for horizontal
+%subplots in horizontal page.
+
+%\usepackage{subfig}
+%\usepackage{psfig}
+%\usepackage{hyperref}
 %\usepackage{todonotes, listings}
 
 \author{Oscar Moll-Thomae}
@@ -27,7 +34,6 @@
 \begin{document}
 \maketitle
 
-
 \newcommand{\code}{\ttfamily}
 
 %todo: figure out way of placing arguments to those ops (see the if then else thing)
@@ -43,7 +49,7 @@
 
 At Twitter, there are three main types of query operations expected of the graph store interface. One is querying for edge metadata given the two endpoints {\code getEdge(v,w)}. Metadata includes values such as a timestamp for when the edge was created, and qualifiers for edge such as whether this represents a simple 'follow', or also a  'follow via sms', or even a ''blocked'. Edges are directed, and there need not be symmetry.  A follows B does not imply B follows A, but A follows B is a fact that may be queired via both A and B. At the application level, this enables the site to inform the user  'do I follow person B?' by displaying this fact on a user's profile, or by coloring the 'Follow' button differently to indicate this is already the case.   
 
-metadata = getEdge(vertexV, vertexW);
+{\code metadata = getEdge(vertexV, vertexW)}
 
 note getEdge(vertexV, vertexW) $\neq$ getEdge(vertexW, vertexV).
 
@@ -52,7 +58,7 @@ The second one is, given a vertex, return all its adjacent vertices. In a direct
 to choose from. Moreover, there are variations on this, we can ask for user given number of vertices, for example the latest one, or all the   {\code getFanout(v)}, The fanout operation with a limited page size enables site visitors to look at the first few followers as well as the first few people a person follows.   Most importantly, the fanout operation enables tweet routing and delivery. Depending on the timeline materialization strategy, Whenever @LadyGaga tweets, the effects of that action must be propagated to @omoll and  everyone else following her in a way that allows for later retrieval.  Or alternatively whenver @ladyGaga signs into the service, tweets from all the people she follows can be retrieved and merged to materilize her timeline. Either of these methods, or a hybrid strategy, need of the fanout operation.
 
 
-%\verb!list<Vertex>, newcursor = getFanout(vertex, inward/outward, maxResults, cursor)!
+\verb!list<Vertex>, newcursor = getFanout(vertex, inward/outward, maxResults, cursor)!
 
  we can scroll thorough the full intersection by either giving a large maxResults, or using the newcursor as the input for a subsequent intersection operation. The ordering of the vertices can be used to encode information, such as edge creation time or for example 'strength' of interactions etc.
 
@@ -61,7 +67,7 @@ Finally the third query operation is the intersection of the neighbors of two no
 There are several important use cases for this operation. When a user visits a friends page, we may want to show a limited set of common friends.  When a user visits a stranger's profile page, it may be useful to show them friends that already are following that stranger to encourage a follow.
 
 
-%\verb! list<Vertex>, newcursor = getIntersection(vertexV, inwardV/outwardV, vertexW, inwardW/outwardW, maxResults, cursor)!
+\verb! list<Vertex>, newcursor = getIntersection(vertexV, inwardV/outwardV, vertexW, inwardW/outwardW, maxResults, cursor)!
 
 %%todo, flesh out examples
 So, for instance we might want to intersect the the followers of @omoll with the followers of @ladyGaga.
@@ -76,12 +82,6 @@ The only update is to add, modify or delete an edge or its metadata.
 %% todo make in to table
 A real workload is made of a mix of these queries and updates. Based on the query logs, the most popular type of query is the fanout/fanin query with a 
 
-\begin{enumerate}
-\item fanout(vertex, inward/outward, small, -1)  70\%. (ie, asking for the first follower)
-\item fanout(vertex, inward/outward, between 1000 and 5000, -1) 10\%
-\item intersection: 1.5\%
-\item edges: 0.5\%
-\end{enumerate}
 
 The database also supports more complicated set operations, and these are less common.
 
@@ -113,7 +113,6 @@ fanout queries also were part of many intersection queries.
 %%eventually place the plots in a matrix.
 
 \subsection{my project}
-
 
 \subsubsection{contributions}
 
@@ -167,7 +166,6 @@ ie. let  \(D\) be the random variable representing the degree of a randomly pick
 \( p_E(n) = n*p_D(n)\). This relation expresses that in a graph with vertices of varied degree, edges are more likely to be around large degree nodes. 
 
 
-
  is making cases where \(n \) is large more likely. 
 
 Caveat: cacheing and size control. How can we 1) increase the degree of every node 2) keep total database size constant 3) not increase locality.
@@ -183,30 +181,71 @@ In fact, partitioning everyone seemed to be the best choice.
 I experimented with a snapshot of the Twitter graph and three different strategies. The first is the control:  hashing by vertex, 
 The second is the two tier strategy, and the third is the workload based partitioning approach.
 
-\subsubsection{control}
 
+%% LOG-LOG-plot-of-fanoutq-vs-edgeq-log-correl019.png          LOG-LOG-plot-of-indeg-vs-outdeg-log-correl076.png
+%% LOG-LOG-plot-of-fanoutq-vs-intersectionq-log-correl049.png  LOG-LOG-plot-of-intersectionq-vs-edgeq-log-correl013.png
+%% LOG-LOG-plot-of-indeg-vs-edgeq-log-correl002.png            LOG-LOG-plot-of-outdeg-vs-edgeq-log-correl004.png
+%% LOG-LOG-plot-of-indeg-vs-fanoutq-log-correl001.png          LOG-LOG-plot-of-outdeg-vs-fanoutq-log-correl006.png
+%% LOG-LOG-plot-of-outdeg-vs-intersectionq-log-correl009.png
+\newcommand{\gridscale}{2.1in}
 
-\subsubsection{two-tier}
-Ran it with a threshold at ??(top 1m) into 5 parts.  Latency behaved as follows:
+\begin{landscape}
+\begin{figure}
+\mbox{
+  \subfigure{\includegraphics[width=\gridscale]{figures/LOG-LOG-plot-of-indeg-vs-edgeq-log-correl002.png}}
+  \subfigure{\includegraphics[width=\gridscale]{figures/LOG-LOG-plot-of-indeg-vs-intersectionq-log-correl020.png}}
+  \subfigure{\includegraphics[width=\gridscale]{figures/LOG-LOG-plot-of-indeg-vs-fanoutq-log-correl001.png}}
+  \subfigure{\includegraphics[width=\gridscale]{figures/LOG-LOG-plot-of-indeg-vs-outdeg-log-correl076.png}}
+}
 
+\mbox{
+  \subfigure{\includegraphics[width=\gridscale]{figures/LOG-LOG-plot-of-outdeg-vs-edgeq-log-correl004.png}}
+  \subfigure{\includegraphics[width=\gridscale]{figures/LOG-LOG-plot-of-outdeg-vs-intersectionq-log-correl009.png}}
+  \subfigure{\includegraphics[width=\gridscale]{figures/LOG-LOG-plot-of-outdeg-vs-fanoutq-log-correl006.png}}
+}
+
+\mbox{
+ \subfigure{\includegraphics[width=\gridscale]{figures/LOG-LOG-plot-of-fanoutq-vs-edgeq-log-correl019.png}}
+ \subfigure{\includegraphics[width=\gridscale]{figures/LOG-LOG-plot-of-fanoutq-vs-intersectionq-log-correl049.png}}
+}
+
+\mbox{
+ \subfigure{\includegraphics[width=\gridscale]{figures/LOG-LOG-plot-of-intersectionq-vs-edgeq-log-correl013.png}}
+}
+
+\caption{Text pertaining to both graphs ...} \label{}
+
+\end{figure}
+\end{landscape}
+\subsubsection{Improving fanout latency}
+
+Ran it with a threshold at ??(top 1m) into 5 parts, rest .  Latency behaved as follows:
 
 The bad news are I arrived at this setting through tuning a program that was not well optimized, after I optimized it.
 
-%% \begin{figure}[h]
-%%   \begin{center}
-%%       \scalebox{1}{\includegraphics[width=6in]{all-shards-fanout.png}}
-%%   \end{center}
-%%   \label{all-shards-fanout}
-%%   \caption{\small Results for all-shards strategy.}
-%% \end{figure}
+\begin{figure}
+  \begin{center}
+      \scalebox{0.25}{\includegraphics{vertex-fanout.png}}
+      \scalebox{0.25}{\includegraphics{two-tier2m-fanouts.png}}
+      \scalebox{0.25}{\includegraphics{all-shards-fanout.png}}
+  \end{center}
+  \label{fig:fanout}
+  \caption{Fanout latencies for a) vertex b) upper 2M tier c) all 5 shards hash}
+\end{figure}
 
+So when I checked to see performance for 5 way partitioning everything, I got even more improvements for the higher latency ranges. Note latency at higher percentiles is reduced, but increased at lower ones. 
 
-So when I checked to see performance for 5 way partitioning everything, I got evenmore improvements for the higher latency ranges.
+\subsubsection{Improving intersection latency}
 
-\subsubsection{workload}
-Not sure of re
-
-
+\begin{figure}
+  \begin{center}
+      \scalebox{0.25}{\includegraphics{vertex-intersection.png}}
+      \scalebox{0.25}{\includegraphics{two-tier2m-intersection.png}}
+      \scalebox{0.25}{\includegraphics{workload-intersection.png}}
+  \end{center}
+  \label{fig:intersection}
+  \caption{Intersection latencies for a) vertex b) upper 2M tier c) workload based}
+\end{figure}
 
 \section{Design}
 %information about what I built, (java and pig) goes here. information about results goes here too.
@@ -215,3 +254,4 @@ To test the different strategies I constructed a basic system consisting of quer
 
 %diagram goes here
 \end{document}
+
