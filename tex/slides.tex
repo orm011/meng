@@ -1,7 +1,15 @@
 \documentclass[compress,red]{beamer}
 %\mode<presentation>
-\usetheme{Warsaw}
+\usetheme{CambridgeUS}
 
+%frame formula:
+%% \frame{\frametitle{TITLE MISSING}
+%% \begin{enumerate}
+%% \item
+%% \end{enumerate}
+%% }
+
+\newcommand{\code}{\ttfamily}
 \useoutertheme[subsection=false]{smoothbars}
 
 \begin{document}
@@ -10,16 +18,111 @@
 \frame{\tableofcontents}
 
 \section{System description}
-%interface
+
+\frame{\frametitle{Service interface}
+  \begin{enumerate}
+  \item update: {\code putEdge(vertexV, vertexW, metadata)}
+  \item queries: 
+  \item edge query: {\code metadata = getEdge(vertexV, vertexW)}
+  \item fanout query: {\code list<Vertex>, newcursor = getFanout(vertex, inward/outward, maxResults, cursor)}
+  \item intersection: {\code list<Vertex>, newcursor = getIntersection(vertexV, inwardV/outwardV, vertexW, inwardW/outwardW, maxResults, cursor)}
+  \item Also: counts, set difference, union. etc.
+  \end{enumerate}
+}
+
+\frame{\frametitle{Other service info}
+ Focus on live updates and simple queries compared to graph data systems
+used for more offline write/graph traversal queries.
+
+ Data distributed across several 10's of nodes to be able to satisify throughput requirements, as well as space.
+
+ Only keeps vertex relations and edge data, not node data.
+}
+
+%of many connectons being symmetric  (can consolidate?)
+%effect of tentatively placing adjacent nodes together: can consolidate 4 edge strcutrues in the best case.
+%indexing?
 %my implementation
-%
 
 \section{Motivation for approaches}
 
+\subsection{solution background}
+
+\frame{\frametitle{main partitioning options}
+\begin{enumerate}
+\item Range partitioning: good for scans, suffers when vertex very large. Involves remembering limits.
+\item Hash Partitioning: on vertex, good for scans, still suffers from vertex very large. Easy to remember.
+\item Hash Partitioning on edge endpoints: good for writes, rest become all-shards queries.
+\item Hash Partitioning (hybrid):  the more it ameliorates worst cases the less optimal for users with few followers.
+\item Fine Grained, lookup table options: need to solve problem of storing routing information.
+\item Arbitrary partitining plus one hop replication. space overhead explodes thanks to graph properties. (sketchy reasoning here)
+\end{enumerate}
+}
+
+\subsection{related work}
+\frame{\frametitle{related problems}
+\begin{enumerate}
+\item Many systems dealing with graphs simply hash by vertex (eg. Giraph), current Twitter graph store. 
+\item Graphs of this kind often exhibit high skew degree distributions.
+\item Skew issue signifficant enough also addressed in other graph processing systems, eg. GraphLab talk on Monday.
+\end{enumerate}
+}
+
+\frame{\frametitle{some techniques}
+\begin{enumerate}
+\item Schism paper proposes technique for partitioning to minimize distributed transactions
+\item In my case, no transactions, but still relevant to minimize related communication overhead, esp when nodes 
+can have large degrees.
+\item Fine grained partitioning paper can be done on at least some `heavy' subset of the graph. Or even more, if we are willing
+to take one round of communication (eg DHT index?)
+\item Collocation (with replication) of edges of adjacent nodes. excessive replication? (and also charges more on writes). May address
+intersection queries if there is correlation  between actual graph and intersection graph
+\item The problem of optimal partitioning of data based on size vs. communication tradeoff also touched in DeWitt `Hybrid-range partitioning' paper. 
+\end{enumerate}
+}
+
+\frame{\frametitle{more surveying}
+\begin{enumerate}
+\item Heuristics of cheap, online graph repositioning also present in literature. 
+\item Many focus on keeping the graph {\em itself} clustered, which is helful for Tweet delivery when receiver tweet table is
+in the same location as senders, but not necessarily for intersection
+\item Some mention `partition by country' or other simple techniques, but this information not available in this case.
+\item Some papers related in the sense of using case by case reasoning on members of graph to successfully optimize overall system. Eg. Feeding frenzy.
+\end{enumerate}
+}
+
+
+\section{Main proposal}
+\frame{\frametitle{Approach}
+\begin{enumerate}
+\item Focus on each individual operation by itself (though some approaches help several)
+\item Focus on latency of operations, though throughput itself should not be penalized.
+\item Focus on using knowledge about specific workload and data to improve performance for that specific case.
+
+\item Not considering replication based techniques (testing them requires also considering the consequences for update operations)
+\end{enumerate}
+}
+
+\frame{\frametitle{Fanout queries}
+large variation in degree size means queries to some vertices
+entail much more work than queries to others.
+
+Latency is affected by amount of communication as well as amount of work.
+
+\(L = max_{i=1}^n(L_i) + q*d/n\)
+
+}
+
+\frame{\frametitle{Intersection queries}
+variation in degree still an issue
+but another gain comes from being able to push filtering effect of intersection closer to data.
+
+}
+%model here
+
 \section{Experiments and results}
 
-
-\subsection{data}
+\subsection{real life data}
 \frame{\frametitle{Graph}
 \begin{enumerate}
 \item Twitter data = graph snapshot + actual query logs 
@@ -42,9 +145,7 @@ with coeff about 1.8, 2.1 respectively. Larger coeff means less extreme degrees.
 \end{enumerate}
 }
 %more info at flockdb github
-
 %how do these graph's evolve, what problems will become more striking.
-
 %workload and graph
 \subsection{results with real data}
 
@@ -64,13 +165,36 @@ with coeff about 1.8, 2.1 respectively. Larger coeff means less extreme degrees.
 %now plots.
 
 \subsection{synthetic data}
+\frame { \frametitle{Synthetic benchmark description}
+\begin{enumerate}
+\item generate graphs and workload
+\item use power law number generator to make more realistic
+\item for graph, power law degree distribution.
+\item for workload, power law in frequence of queries to different nodes (access skew)
+\item important: can experiement with different skew parameters, unlike with real data.
+\item other parameters: number of queries, ratio of max to min degree, avg degree, number of vertices.
+\item single threaded, only useful for measuring pure operation and communication latency..
+\end {enumerate}
+}
+
 \subsection{results with synthetic data}
 
+\frame { \frametitle{Results}
+\begin{enumerate}
+\item The ones shown in December meeting (via skype)
+  \begin{enumerate}
+  \item Curve of latency vs. num shards for split  is u-shaped.
+  \item optimal number of shards depends on \# followers, 
+  \end{enumerate}
+\item used to tune two tier for the real workload.
+\item In the past, pointed out I should develop model. Also, pointed out suspicions on small
+ speedup.
+\item found a possible reason for that, but late. 
+\item can run again without need for data. (need to regenerate those particular plots anyway)
+\end {enumerate}
+}
+
 \section{Work done}
-\subsection{background info gathering}
-%current system? dewitt paper, other graph related: pregel, 
-%neo4j, one-hop replication, telefonica papers, (see collection)
-%partitioning in general, graph properties
 
 \subsection{programming}
 %java, RMI, data collection infrastructure, testing,  loading,
