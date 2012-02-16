@@ -1,6 +1,7 @@
 log stats:
 note that the simple query and intersection etc. queries use a page size and page offset argument, so some operations may logically be the same.
 sed 's/[(|)]//g' results.txt | sed 's/,/ /' | sort -k 2nr | awk 'BEGIN {total=0} {total+=$2; print $1,100*$2/384412936, 100*total/384412936}' 
+
 SimpleQuery 98.0922 98.0922
 SimpleQuery_SimpleQuery_Intersection 1.10557 99.1978
 Edge 0.346931 99.5447
@@ -13,18 +14,19 @@ SimpleQuery_SimpleQuery_Union 0.0273851 100
 types of fanout query by query frequency:
 note the large number of size 1 queries.
 1 60.1611 60.1611
-1000 8.85729 69.0184
 2 3.74861 72.767
-4000 2.49181 75.2588
 3 2.26237 77.5212
-100 1.91549 79.4367
-20 1.81965 81.2563
 5 1.71838 82.9747
-10 1.58115 84.5558
 4 1.23909 85.
 
-By far, most queries are  are of offset -1. (first element)
+10 1.58115 84.5558
+20 1.81965 81.2563
+100 1.91549 79.4367
 
+1000 8.85729 69.0184
+4000 2.49181 75.2588
+
+By far, most queries are  are of offset -1. (first element)
 
 snapshot had 130million ids, 5 billion edges, ~8 billion unique pairs (dedup edges)
 metis input had 10million ids only ~800k edges
