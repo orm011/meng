@@ -1,7 +1,0 @@
-(SimpleQuery_SimpleQuery_Difference,616829)
-(SimpleQuery_SimpleQuery_Union,105272)
-(SimpleQuery_SimpleQuery_Intersection,4249957)
-(SimpleQuery_SimpleQuery_Intersection_SimpleQuery_Intersection,801954)
-(SimpleQuery_SimpleQuery_Intersection_SimpleQuery_Difference,225992)
-(SimpleQuery,377079284)
-(Edge,1333648)

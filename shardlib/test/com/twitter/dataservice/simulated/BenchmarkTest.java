@@ -56,7 +56,7 @@ public class BenchmarkTest
         
         try
         {
-            prop.store(new FileOutputStream(new File("test/com/twitter/dataservice/simulated/testConfigFile.properties")), "hello");
+            prop.store(new FileOutputStream(new File("test/com/twitter/dataservice/simulated/testConfigFileOutput.properties.tmp")), "hello");
         } catch (FileNotFoundException e)
         {
             // TODO Auto-generated catch block
