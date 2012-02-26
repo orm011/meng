@@ -13,7 +13,7 @@ public class LogReplayBenchmarkTest
     
     @Test
     public void checkEmpty(){
-        LogReplayBenchmark lrb = new LogReplayBenchmark("/Users/oscarm/workspace/oscarmeng/shardlib/samplelog.log", 0);        
+        LogReplayBenchmark lrb = new LogReplayBenchmark("test/com/twitter/dataservice/simulated/samplelog.log", 0);        
         
         //should not say I have next
         Assert.assertTrue(!lrb.hasNext());
@@ -30,7 +30,7 @@ public class LogReplayBenchmarkTest
     
     @Test
     public void checkIdempotentHasNext(){
-        LogReplayBenchmark lrb = new LogReplayBenchmark("/Users/oscarm/workspace/oscarmeng/shardlib/samplelog.log", 1);        
+        LogReplayBenchmark lrb = new LogReplayBenchmark("test/com/twitter/dataservice/simulated/samplelog.log", 1);        
 
         //should hold true repeatedly
         Assert.assertTrue(lrb.hasNext());
@@ -49,7 +49,7 @@ public class LogReplayBenchmarkTest
     
     @Test
     public void checkLinesRead(){
-        LogReplayBenchmark lrb = new LogReplayBenchmark("/Users/oscarm/workspace/oscarmeng/shardlib/samplelog.log", Long.MAX_VALUE);
+        LogReplayBenchmark lrb = new LogReplayBenchmark("test/com/twitter/dataservice/simulated/samplelog.log", Long.MAX_VALUE);
         
         int queries = 0;
         
@@ -59,7 +59,7 @@ public class LogReplayBenchmarkTest
         }
         
         //assert 
-        Assert.assertEquals(queries, 23);
+        Assert.assertEquals(queries, 10);
     }
     
     @Test
@@ -82,7 +82,7 @@ public class LogReplayBenchmarkTest
     
     @Test
     public void checkTabSeparated(){
-        LogReplayBenchmark lrb = new LogReplayBenchmark("/Users/oscarm/workspace/oscarmeng/shardlib/test/com/twitter/dataservice/simulated/testworkload.workload", 3);
+        LogReplayBenchmark lrb = new LogReplayBenchmark("test/com/twitter/dataservice/simulated/testworkload.workload", 3);
         Query q = lrb.next();
         Assert.assertTrue(lrb.next() instanceof Query.FanoutQuery);
         Query.FanoutQuery r = (Query.FanoutQuery)q;

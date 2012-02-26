@@ -22,7 +22,7 @@ public class LoadNodeFromFileTest
     @Test
     public void testLoad(){
         CompactDataNode dn = new CompactDataNode(2);
-        WorkNodeMain.loadFromLocal("/Users/oscarm/workspace/oscarmeng/shardlib/test/com/twitter/dataservice/sharding/edgeFile.edges", dn);
+        WorkNodeMain.loadFromLocal("test/com/twitter/dataservice/sharding/edgeFile.edges", dn);
 
         try {
             Edge e1 = dn.getEdge(new Vertex(1), new Vertex(2));

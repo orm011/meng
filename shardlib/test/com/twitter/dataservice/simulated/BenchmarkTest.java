@@ -23,7 +23,7 @@ public class BenchmarkTest
 
     //only testing the logger api.
     @Test public void foo(){
-        PropertyConfigurator.configure("/Users/oscarm/workspace/oscarmeng/shardlib/log4j.properties");
+        PropertyConfigurator.configure("log4j.properties");
         Logger lg = Logger.getLogger(BenchmarkTest.class);
         try
         {
@@ -32,7 +32,7 @@ public class BenchmarkTest
             String folder = new SimpleDateFormat("yyyy-MM-dd").format(now);
             String name = "saved_on_" + new SimpleDateFormat("yyyy-MM-dd'T'HH.mm.ss.SSS").format(now);
             lg.addAppender(new FileAppender(new org.apache.log4j.PatternLayout("%r [%t] %p %c{2} %x %d %m%n"), 
-                    "/Users/oscarm/workspace/oscarmeng/shardlib/logs/archive/"+ name + ".log"));
+                    "logs/archive/"+ name + ".log"));
         } catch (IOException e)
         {
             e.printStackTrace();
@@ -56,7 +56,7 @@ public class BenchmarkTest
         
         try
         {
-            prop.store(new FileOutputStream(new File("testConfigFile.properties")), "hello");
+            prop.store(new FileOutputStream(new File("test/com/twitter/dataservice/simulated/testConfigFile.properties")), "hello");
         } catch (FileNotFoundException e)
         {
             // TODO Auto-generated catch block
@@ -74,7 +74,7 @@ public class BenchmarkTest
         
         try
         {
-            p.load(new FileReader("testPropertyfile.properties"));
+            p.load(new FileReader("test/com/twitter/dataservice/simulated/testPropertyfile.properties"));
         } catch (FileNotFoundException e)
         {
             e.printStackTrace();
