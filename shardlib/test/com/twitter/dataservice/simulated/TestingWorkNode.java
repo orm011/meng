@@ -4,7 +4,7 @@ import java.rmi.RemoteException;
 import java.util.Collection;
 import java.util.List;
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+import org.apache.commons.lang.NotImplementedException;
 
 import com.twitter.dataservice.remotes.IDataNode;
 import com.twitter.dataservice.shardutils.Edge;

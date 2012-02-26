@@ -37,7 +37,7 @@ import java.util.concurrent.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+import org.apache.commons.lang.NotImplementedException;
 
 /*
  * # Set Cursor = -1 when requesting the first Page. Cursor = 0 indicates the end of the result set.

@@ -1,7 +1,7 @@
 package com.twitter.dataservice.simulated;
 
 import java.rmi.RemoteException;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+import org.apache.commons.lang.NotImplementedException;
 
 import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Vertex;

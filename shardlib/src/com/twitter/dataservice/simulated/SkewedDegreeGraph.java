@@ -11,10 +11,7 @@ import java.util.Random;
  
 import org.apache.commons.math.MathException;
 import org.apache.commons.math.distribution.ZipfDistributionImpl;
-
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
-
-import com.sun.org.apache.bcel.internal.generic.FNEG;
+import org.apache.commons.lang.NotImplementedException;
 import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Pair;
 import com.twitter.dataservice.shardutils.Vertex;
