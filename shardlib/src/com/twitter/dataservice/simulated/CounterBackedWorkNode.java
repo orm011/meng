@@ -73,5 +73,10 @@ public class CounterBackedWorkNode extends AbstractDataNode
         // TODO Auto-generated method stub
        throw new NotImplementedException(); 
     }
+
+	@Override
+	public NodeStats stat() throws RemoteException {
+		throw new NotImplementedException();
+	}
     
 }

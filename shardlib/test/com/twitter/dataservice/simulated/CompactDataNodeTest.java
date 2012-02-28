@@ -9,6 +9,8 @@ import junit.framework.Assert;
 
 import org.junit.Test;
 
+import com.twitter.dataservice.remotes.IDataNode;
+import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Vertex;
 
 public class CompactDataNodeTest
@@ -110,6 +112,29 @@ public class CompactDataNodeTest
         }
     }
     
+    @Test
+    public void testStatus(){
+    	CompactDataNode cdn = new CompactDataNode(0, "node0");
+    	try {
+    		IDataNode.NodeStats stats = cdn.stat();
+    		Assert.assertEquals(new IDataNode.NodeStats("node0", 0, 0, -1), stats);
+    		
+    		cdn.putFanout(0, new int[]{1});
+    		stats = cdn.stat();
+    		Assert.assertEquals(new IDataNode.NodeStats("node0", 1, 1, 1), stats);
+    		
+    		cdn.putFanout(1, new int[]{0,1,2,3,4});
+    		stats = cdn.stat();
+    		Assert.assertEquals(new IDataNode.NodeStats("node0", 2, 6, 5), stats);
+    		
+    		cdn.putFanout(2, new int[]{});
+    		stats = cdn.stat();
+    		Assert.assertEquals(new IDataNode.NodeStats("node0", 3, 6, 5), stats);
+    	} catch (RemoteException re){
+    		Assert.fail();
+    	}
+    }
+    
     public ArrayList<Vertex> getVertexList(int[] intarray){
         ArrayList<Vertex> result = new ArrayList<Vertex>(intarray.length);
         
@@ -119,5 +144,7 @@ public class CompactDataNodeTest
         
         return result;
     }
+    
+    
     
 }

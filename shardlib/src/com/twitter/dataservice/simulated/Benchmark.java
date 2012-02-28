@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Ticker;
+import com.google.common.collect.Collections2;
 import com.google.common.primitives.Ints;
 import com.twitter.dataservice.remotes.IDataNode;
 import com.twitter.dataservice.sharding.INodeSelectionStrategy;
@@ -252,6 +253,22 @@ public class Benchmark {
         //TODO: implement this if needed, maybe not needed.
     }
     
+    public static void resetAndCheck(IAPIServer apiServer){
+    	
+        long time = System.nanoTime();
+        apiServer.putFanout(0, new int[]{1});
+        System.out.printf("putFanout roundtrip: %d musec\n", (System.nanoTime() - time)/1000);
+
+        long time2 = System.nanoTime();
+        List<Vertex> ans = apiServer.getFanout(Vertex.ZERO, 1, 0);
+        System.out.printf("getFanout roundtrip: %d musec\n", (System.nanoTime() - time2)/1000);
+        System.out.println("answer: " + ans);   
+    }
+    
+    public static void stat(IAPIServer apiServer){
+    	
+    }
+    
     public static void runBenchmark(GraphParameters graphParams, WorkloadParameters workloadParams, IAPIServer apiServer, String logName){
 
       //Graph graph = SkewedDegreeGraph.makeSkewedDegreeGraph(graphParams); //TODO: change this
@@ -283,22 +300,22 @@ public class Benchmark {
 //      Iterator<Query> ot = graph.workloadIterator(workloadParams);
       
       //TODO: be more specific about the exception, at the work node level maybe?
-      logger.debug(String.format("logName: %s, numqueries: %d\n", logName, workloadParams.getNumberOfQueries()));
-      Iterator<Query> ot = new LogReplayBenchmark(logName, workloadParams.getNumberOfQueries());
-      while (ot.hasNext()) {
-          Query q = ot.next();
-          List<Vertex> answer;
-          
-          try {
-              logger.debug(q.toString());
-              answer = q.execute(api);
-              logger.debug(answer.toString());
-          } catch (RuntimeException re){
-              logger.error("{} for query: {}", re.getMessage(), q);
-          }
-          
-      }
-      
+//      logger.debug(String.format("logName: %s, numqueries: %d\n", logName, workloadParams.getNumberOfQueries()));
+//      Iterator<Query> ot = new LogReplayBenchmark(logName, workloadParams.getNumberOfQueries());
+//      while (ot.hasNext()) {
+//          Query q = ot.next();
+//          List<Vertex> answer;
+//          
+//          try {
+//              logger.debug(q.toString());
+//              answer = q.execute(api);
+//              logger.debug(answer.toString());
+//          } catch (RuntimeException re){
+//              logger.error("{} for query: {}", re.getMessage(), q);
+//          }
+//          
+//      }
+ 
       omc.finish();
       System.out.println("done. log saved at: \n" + TimestampNameFileAppender.getLogName());
     }   

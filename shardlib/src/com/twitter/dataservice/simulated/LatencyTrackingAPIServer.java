@@ -179,4 +179,9 @@ public class LatencyTrackingAPIServer implements IAPIServer
     public void putFanout(int vertexid, int[] fanouts){
         measuredServer.putFanout(vertexid, fanouts);
     }
+
+	@Override
+	public Collection<Stats> stat() {
+		return measuredServer.stat();
+	}
 }

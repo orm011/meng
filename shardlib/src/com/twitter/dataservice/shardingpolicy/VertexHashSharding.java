@@ -16,7 +16,6 @@ import com.twitter.dataservice.simulated.UtilMethods;
 
 public class VertexHashSharding implements INodeSelectionStrategy
 {
-
     //the amount of data nodes in the system
     int numNodes;
 
@@ -26,10 +25,10 @@ public class VertexHashSharding implements INodeSelectionStrategy
         this(numNodes, 1);
     }
     
-    public VertexHashSharding(int numNodes, int numShards){
-        if (numNodes < 1 || numNodes > (int)Byte.MAX_VALUE || numShards > numNodes) throw new IllegalArgumentException();
+    public VertexHashSharding(int numNodes, int numShardsPerVertex){
+        if (numNodes < 1 || numNodes > (int)Byte.MAX_VALUE || numShardsPerVertex > numNodes) throw new IllegalArgumentException();
         this.numNodes = numNodes;
-        this.numShards = numShards; 
+        this.numShards = numShardsPerVertex; 
     }
     
     /*

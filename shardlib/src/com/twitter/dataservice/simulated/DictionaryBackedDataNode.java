@@ -120,4 +120,9 @@ public class DictionaryBackedDataNode extends AbstractDataNode implements IDataN
         // TODO Auto-generated method stub
         throw new NotImplementedException();
     }
+
+	@Override
+	public NodeStats stat() throws RemoteException {
+		throw new UnsupportedOperationException();
+	}
 }

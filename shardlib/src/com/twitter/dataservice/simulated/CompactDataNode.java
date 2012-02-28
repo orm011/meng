@@ -30,14 +30,19 @@ public class CompactDataNode extends AbstractDataNode implements IDataNode
     //consistency condition: there is an edge (u, v) for every v in fanout(u)
     //note the edge object also contains the pair.    
     private HashMap<Integer, int[]> fanouts;
-    private final String name;   
+    private final String name;
     
-    public CompactDataNode(int numVertices){
+    
+    public CompactDataNode(int numVertices, String name){
         String logPropertyFile = "dataNodelog4j.properties";
         PropertyConfigurator.configure(logPropertyFile);
         
-        fanouts = new HashMap<Integer, int[]>(numVertices);
-        name = "defaultName";
+        fanouts = new HashMap<Integer, int[]>(numVertices);    	
+        this.name = name;
+    }
+    
+    public CompactDataNode(int numVertices){
+        this(numVertices, "defaultName");
     }
     
     public CompactDataNode(){
@@ -104,6 +109,7 @@ public class CompactDataNode extends AbstractDataNode implements IDataNode
     public void putEdge(Edge e) throws RemoteException
     {
         System.out.println("WARNING: call to putEdge operation. Ignoring.");
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -116,10 +122,27 @@ public class CompactDataNode extends AbstractDataNode implements IDataNode
     @Override
     public int totalLoad() throws RemoteException
     {
-        throw new NotImplementedException();
+    	throw new UnsupportedOperationException();
+    }
+    
+    @Override
+	public IDataNode.NodeStats stat() throws RemoteException
+    {
+    	int totalV = 0;
+    	int totalD = 0;
+    	int maxD = -1;
+    	
+    	for (int[] fanout : fanouts.values()){
+    		totalV += 1;
+    		totalD += fanout.length;
+    		maxD = Ints.max(maxD, fanout.length);
+    	}
+    	
+    	return new IDataNode.NodeStats(this.name, totalV, totalD, maxD);
     }
     
     public void finishLoading() {
         throw new NotImplementedException();
     }
+    
 }

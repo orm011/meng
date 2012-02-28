@@ -88,4 +88,9 @@ public class TestingWorkNode extends AbstractDataNode implements IDataNode
         throw new NotImplementedException();
         
     }
+
+	@Override
+	public NodeStats stat() throws RemoteException {
+		throw new NotImplementedException();
+	}
 }

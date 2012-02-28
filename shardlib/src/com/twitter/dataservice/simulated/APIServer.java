@@ -12,6 +12,8 @@ import com.twitter.dataservice.shardingpolicy.TwoTierHashSharding;
 import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Node;
 import com.twitter.dataservice.shardutils.Vertex;
+import com.twitter.dataservice.simulated.IAPIServer.Stats;
+import com.twitter.dataservice.simulated.IAPIServer.SuccessfulStats;
 
 import java.nio.channels.ScatteringByteChannel;
 import java.rmi.NotBoundException;
@@ -53,10 +55,11 @@ public class APIServer implements IAPIServer
     private static Logger log = LoggerFactory.getLogger(APIServer.class);
     
     public static int DEFAULT_PREALLOC_SIZE = 20; // median fanout size
-    //TODO: make it api have interface like an individual node?;
+
     Map<Node, IDataNode> nodes = new HashMap<Node, IDataNode>();
     private INodeSelectionStrategy shardinglib = null; // see constructor 
     ExecutorService executor;
+    
     //needed cause of existing test
     public static APIServer apiWithGivenWorkNodes(List<? extends IDataNode> givenNodes){
         Map<Node, IDataNode> nodes = new HashMap<Node, IDataNode>(givenNodes.size());
@@ -341,4 +344,37 @@ public class APIServer implements IAPIServer
         }        
         return total;
     }
+
+	@Override
+	public Collection<IAPIServer.Stats> stat() {
+		List<IAPIServer.Stats> ans = new ArrayList<IAPIServer.Stats>(nodes.values().size());
+		
+		for (IDataNode n: nodes.values()){
+			try {
+				long start = System.nanoTime();
+				IDataNode.NodeStats ns = n.stat();
+				long duration = System.nanoTime() - start;
+				
+				ans.add(new IAPIServer.SuccessfulStats(duration, ns));
+			} catch (RemoteException re){
+				ans.add(new IAPIServer.FailedStats(re));
+			}
+		}
+		
+		return ans;
+	}
+	
+	public static SuccessfulStats statSummary(Collection<Stats> stats){
+		Iterator<Stats> st = stats.iterator();
+		SuccessfulStats total = SuccessfulStats.EMPTY;
+		
+		while (st.hasNext()){
+			Stats x = st.next();
+			if (x instanceof SuccessfulStats){
+				total = total.merge((SuccessfulStats)x);
+			}
+		}
+		
+		return total;
+	}
 }
