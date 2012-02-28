@@ -2,6 +2,8 @@
 %\mode<presentation>
 \usetheme{CambridgeUS}
 
+\usepackage{epsfig}
+
 %frame formula:
 %% \frame{\frametitle{TITLE MISSING}
 %% \begin{enumerate}
@@ -9,10 +11,19 @@
 %% \end{enumerate}
 %% }
 
+
+\title{MEng thesis status}
+\author{Oscar Moll}
+\date{\today}
+\institute{?}
+
 \newcommand{\code}{\ttfamily}
 \useoutertheme[subsection=false]{smoothbars}
 
 \begin{document}
+\frame{
+	\titlepage
+}
 
 \section[Outline]{}
 \frame{\tableofcontents}
@@ -31,12 +42,15 @@
 }
 
 \frame{\frametitle{Other service info}
- Focus on live updates and simple queries compared to graph data systems
+\begin{itemize}
+\item  Focus on live updates and simple queries compared to graph data systems
 used for more offline write/graph traversal queries.
 
- Data distributed across several 10's of nodes to be able to satisify throughput requirements, as well as space.
+\item  Data distributed across several 10's of nodes to be able to satisify throughput requirements, as well as space.
 
- Only keeps vertex relations and edge data, not node data.
+\item Data store o keeps vertex relations and edge data only, not node data nor
+message tables. Hence using the graph to keep neighbors together is not a big gain.
+\end{itemize}
 }
 
 %of many connectons being symmetric  (can consolidate?)
@@ -46,7 +60,7 @@ used for more offline write/graph traversal queries.
 
 \section{Motivation for approaches}
 
-\subsection{solution background}
+\subsection{Solution background}
 
 \frame{\frametitle{main partitioning options}
 \begin{enumerate}
@@ -59,7 +73,7 @@ used for more offline write/graph traversal queries.
 \end{enumerate}
 }
 
-\subsection{related work}
+\subsection{Related work I am using}
 \frame{\frametitle{related problems}
 \begin{enumerate}
 \item Many systems dealing with graphs simply hash by vertex (eg. Giraph), current Twitter graph store. 
@@ -93,6 +107,9 @@ in the same location as senders, but not necessarily for intersection
 
 
 \section{Main proposal}
+
+\subsection{Approach}
+
 \frame{\frametitle{Approach}
 \begin{enumerate}
 \item Focus on each individual operation by itself (though some approaches help several)
@@ -103,27 +120,81 @@ in the same location as senders, but not necessarily for intersection
 \end{enumerate}
 }
 
+\subsection{Fanouts}
 \frame{\frametitle{Fanout queries}
-large variation in degree size means queries to some vertices
+Large variation in degree size means queries to some vertices
 entail much more work than queries to others.
 
-Latency is affected by amount of communication as well as amount of work.
+Latency is affected by two effects: one related to communication one to amount of work.
 
-\(L = max_{i=1}^n(L_i) + q*d/n\)
+\[L = max_{i=1}^n(L_i) + qd/n \]
+
+$L$ is latency, $L_i$ is latency for an individual server to return, $d$ is degree, $q$ is some system dependent constant, $n$ is the number of servers distributing the work.
+
+If $d$ is small, $L$ is mostly from communication $max_{i=1}^n(L_i)$. If $d$ is large the cost comes mostly from the actual work $qd/n$. In $max_{i=1}^n(L_i)$ grows with $n$, whereas $qd/n$ decreases with it.
+}
+
+\frame{\frametitle{Two tiers}
+
+Hence the optimal choice depends on the degree. Can choose to optimize for the distribution (DeWitt)
+
+Or, get the best of both worlds and treat nodes of large degree differently than nodes of small degree.
+
+More complicated now, because need to remember how to treat each id. Data has power law distribution:
+
+The memory cost of remembering is $O(\mbox{\# high degree vertices})$ the benefits are $O(\mbox{\# of {\em edges} in high degree vertices})$. 
+
+So it is possible to remember only a few vertices. This is the two-tier strategy.
+
+Exactly where to draw the cutoff and how to partition needs tuning. 
+}
+
+
+\frame{\frametitle{Best possible world savings}
+
+\begin{figure}
+\includegraphics[width=4in]{vertexVsDegree2.png}
+\end{figure}
+
+} 
+
+\frame{\frametitle{Savings with actual graph parameters}
+
+\begin{figure}
+\includegraphics[width=4in]{vertexVsDegree.png}
+\end{figure}
 
 }
+
+
+\subsection{Intersection}
 
 \frame{\frametitle{Intersection queries}
-variation in degree still an issue
-but another gain comes from being able to push filtering effect of intersection closer to data.
+For intersections, variation in degree still an issue for latency variability, 
+but there are oportunities for optimization. Since intersection has a filtering effect, it is best to give as high priority as possible to it.
+
+\begin{enumerate}
+\item An intersection cannot be larger than the smaller set, so if a set is small, it is worth pushing the operation to the node with the larger set rather than moving the large set at all.
+
+\item Another strategy is collocating data from two sets we know are intersected often. (based on the Schism paper)
+
+\item  Independent of the other optimizations, splitting large fanout vertices into several machines could enable parallelism in intersection.
+
+\end{enumerate}
+
+Of those optimizations, I attempted to apply the ideas from the Schism paper on this context. 
+
+Applying parallelism gets complicated by the {\code maxResults} and {\code offset} arguments to the operation, as well as order constraints on the interface.
 
 }
-%model here
 
 \section{Experiments and results}
 
-\subsection{real life data}
+\subsection{real data (goal of being at Twitter)}
 \frame{\frametitle{Graph}
+
+{\em (See graph)}
+
 \begin{enumerate}
 \item Twitter data = graph snapshot + actual query logs 
 \item Graph \~ 100 million users, 5 billion directed edges. (snapshot from some time ago).
@@ -151,6 +222,9 @@ with coeff about 1.8, 2.1 respectively. Larger coeff means less extreme degrees.
 
 \frame{\frametitle{Results on Twitter Data}
 \vspace{0.25cm}
+
+{\em (See graph)}
+
 \begin{enumerate}
 
 \item three main methods for fanout queries: all shards (in this case only 5 though), two-tier ( ie above 20k deg all shards, below, one shard), vertex hash (control)
@@ -164,7 +238,7 @@ with coeff about 1.8, 2.1 respectively. Larger coeff means less extreme degrees.
 
 %now plots.
 
-\subsection{synthetic data}
+\subsection{Synthetic data}
 \frame { \frametitle{Synthetic benchmark description}
 \begin{enumerate}
 \item generate graphs and workload
@@ -177,7 +251,7 @@ with coeff about 1.8, 2.1 respectively. Larger coeff means less extreme degrees.
 \end {enumerate}
 }
 
-\subsection{results with synthetic data}
+\subsection{Results with synthetic data}
 
 \frame { \frametitle{Results}
 \begin{enumerate}
@@ -196,31 +270,56 @@ with coeff about 1.8, 2.1 respectively. Larger coeff means less extreme degrees.
 
 \section{Work done}
 
-\subsection{programming}
-%java, RMI, data collection infrastructure, testing,  loading,
-%benchmark and graph generation, Pig Latin for data analysis,
-%some work that came to nothing.(hash ring), configuration.
-%lines of code? + tests?, lines of pig?
-%wrote notes
-%METIS, metis problem debugging
+\subsection{last 5 months}
+\frame { \frametitle{system}
+\begin{enumerate}
+\item Constructed basic model of system in Java (interfaces, parallel requests etc)
+\item Set up RMI for client to server comm (data nodes)
+\item Loading (for real data, logs)
+\item Benchmark and graph generation (synthetic)
+\item Data formating and analysis in Pig (real data)
+\item Data display in Octave.
+\item Configuration system (for easier benchmarking)
+\item Optimization to fit real data (more efficient data structures, load process, serialization)
+\item 4k lines of java, 2k lines of java tests, 0.5k of pig.
+\item Some building work came to nothing, some was reinventing the wheel.
+\item Getting METIS working, reformating data when it didn't
+\item Debugging plots that made no sense
+\end {enumerate}
+}
 
 \subsection{issues}
-%synthetic load problem with parallelism. 
-%limited info on intersections on real graph.
+\frame{ \frametitle{issues}
+\begin{enumerate}
+\item Only got to do limited experiements with real data.
+\item Not evaluating writes: No concurrency overhead in measurements.
+\item Not evaluating other strategies (like replication based ones, because they involve large modifications to system)
+\item perhaps should have used larger query graph (over longer time), so that larger fraction represented.
+\item Need to replay synthetic benchmark. (need machines?)
+\item moving nodes is static.
+\end{enumerate}
 
-\subsection{optimizing}
-%space for real graph, java native structure overhead, loading graph, 
-%sorted arrays structures vs. trees., rmi serialization
+}
 
-\section{work pending}
-%other operations? eg more general set operations.
-%focused on getting to use real data etc., now no access, but time
-% to explore other ideas, using synthetic benchmarks.
-% work on the cost model approach to tuning two-tier
-% with that, repeat synthetic data experiments, need to figure out where.
-% explore other ideas, such as:
-% optimizing for intersections online?
-% cacheing as an approach to statistical regularity?
-% writing first draft, getting feedback, getting aproval. dates?
+\subsection{pending}
+\frame{\frametitle{ideas for further work}
+
+Higher priority:
+\begin{enumerate}
+
+\item work on the cost model approach to tuning two-tier
+\item with that, repeat synthetic data experiments, need to figure out where.
+\item writing first draft, getting feedback, getting aproval. dates?
+
+\end{enumerate}
+
+Low priority:
+\begin{enumerate}
+\item other operations? eg more general set operations.
+\item to explore other ideas partitioning, using synthetic benchmarks.
+\item cacheing as an approach to exploiting statistical regularity?
+\item think of metis algorithm, maybe it could be made into online algorithm.
+\end{enumerate}
+}
 
 \end{document}
