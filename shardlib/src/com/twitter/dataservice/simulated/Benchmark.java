@@ -280,6 +280,7 @@ public class Benchmark {
       //Iterator<Edge> it = graph.graphIterator();
       omc.begin();
       
+      System.out.println(api.stat());
 //      //log degrees for auditing later
 //      Logger graphLogger = LoggerFactory.getLogger(Graph.class);      
 //      for (int i = 0; i < graphParams.getNumberVertices();  ++i) graphLogger.debug("{}", ((SkewedDegreeGraph)graph).getDegree(i));

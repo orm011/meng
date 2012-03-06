@@ -1,5 +1,6 @@
 package com.twitter.dataservice.remotes;
 
+import java.io.Serializable;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.Collection;
@@ -34,7 +35,7 @@ public interface IDataNode extends Remote
     
 
     
-    public class NodeStats {
+    public static class NodeStats implements Serializable {
     	@Override
 		public String toString() {
 			return "NodeStats [maxDegree=" + maxDegree + ", name=" + name

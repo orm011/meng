@@ -1,24 +1,24 @@
-build:
-	javac -d ./bin/  -cp ./lib/commons-math-2.2.jar:./lib/commons-lang-2.6.jar:./lib/junit-4.10.jar:./lib/log4j-1.2.16.jar:./lib/slf4j-api-1.6.4.jar:./lib/slf4j-log4j12-1.6.4.jar:./lib/guava-11.0.1.jar:./lib/pig-0.9.2.jar:./lib/commons-logging-commons-logging-1.1.1.jar:./lib/hadoop-core-1.0.0.jar src/com/twitter/dataservice/*/*.java
+machines := cocoa vise5
+
+destination_folder := $(addsuffix .csail.mit.edu:~/thesis, $(machines))
+
+configuration := Benchmark.properties log4j.properties dataNodelog4j.properties server.policy *.sh
+
+jars := commons-math-2.2 commons-lang-2.6 junit-4.10 log4j-1.2.16 slf4j-api-1.6.4 slf4j-log4j12-1.6.4 guava-11.0.1 pig-0.9.2 commons-logging-commons-logging-1.1.1 hadoop-core-1.0.0
+
+classpath := $(shell echo $(addprefix ./lib/, $(addsuffix .jar, $(jars))) | sed 's/ /:/g')
+
+build: 
+	javac -d ./bin/ -cp $(classpath) src/com/twitter/dataservice/*/*.java 
 
 clean:
 	rm -rf ./bin/
 
 deploy-lib:
-	scp ./lib/*.jar orm@cocoa.csail.mit.edu:~/thesis/lib
+	$(foreach dest, $(addsuffix /lib/,$(destination_folder)), scp -r ./lib/*.jar $(dest);)
 
 deploy-all:
-	scp -r ./bin Benchmark.properties *og4j.properties server.policy runmany.sh Makefile orm@cocoa.csail.mit.edu:~/thesis
-#scp -r -q (q for no prints)
-
-deploy-benchmark:
-	scp -r  ./bin orm@cocoa.csail.mit.edu:~/thesis/
+	$(foreach dest, $(destination_folder), scp -r -q ./bin $(configuration) $(dest);)
 
 deploy-conf:
-	scp -r Benchmark.properties *og4j.properties server.policy runmany.sh Makefile orm@cocoa.csail.mit.edu:~/thesis/
-
-#example work node command:
-#java -cp ./bin/:./lib/commons-math-2.2.jar:./lib/commons-lang-2.6.jar:./lib/junit-4.10.jar:./lib/log4j-1.2.16.jar:./lib/slf4j-api-1.6.4.jar:./lib/slf4j-log4j12-1.6.4.jar:./lib/guava-11.0.1.jar -Djava.security.policy=server.policy -Djava.rmi.server.codebase=file:./bin/ com.twitter.dataservice.simulated.WorkNodeMain node0-lookuptablehashbackwardpart0 &
-
-#server:
-#java -cp ./bin/:./lib/commons-math-2.2.jar:./lib/commons-lang-2.6.jar:./lib/junit-4.10.jar:./lib/log4j-1.2.16.jar:./lib/slf4j-api-1.6.4.jar:./lib/slf4j-log4j12-1.6.4.jar:./lib/guava-11.0.1.jar -Djava.security.policy=server.policy -Djava.rmi.server.codebase=file:./bin/ com.twitter.dataservice.simulated.Benchmark log4j.properties Benchmark.properties
+	$(foreach dest, $(destination_folder), scp -r -q $(configuration) $(dest);)

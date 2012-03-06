@@ -15,7 +15,9 @@ import com.twitter.dataservice.shardutils.Vertex;
 import com.twitter.dataservice.simulated.IAPIServer.Stats;
 import com.twitter.dataservice.simulated.IAPIServer.SuccessfulStats;
 
+import java.net.MalformedURLException;
 import java.nio.channels.ScatteringByteChannel;
+import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -87,11 +89,13 @@ public class APIServer implements IAPIServer
                 String address = dataNodeAddress[i];
                 int port = Integer.valueOf(dataNodePort[i]);
                 
-                System.out.printf("looking up node: %s\n", name);
+                System.out.printf("looking up registry at: %s:%d\n", address, port);
                 Registry reg = LocateRegistry.getRegistry(address, port);
+                System.out.println("registry: " + reg);
+                System.out.println("registry has list: " + Arrays.toString(reg.list()));
+                System.out.printf("looking up data node %s\n", name);
                 IDataNode remote = (IDataNode) reg.lookup(name);
-                System.out.println("got remote reference: " + remote);
-                //Naming.lookup(name);
+                System.out.println("got data node: " + remote);
                 
                 int id = Integer.parseInt(name.substring(name.split("[0-9]+", 0)[0].length(), name
                         .length()));
