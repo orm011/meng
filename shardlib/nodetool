@@ -1,0 +1,55 @@
+#!/bin/bash
+
+if [[ $1 =~ node* ]]
+then
+    node=$1
+    shift
+else
+    node=""
+fi
+
+for symbol in $(grep -G '^node' benchmark.properties)
+do
+
+name=${symbol%%=[a-z0-9.]*}
+suffix=${symbol##[a-z0-9]*=}
+address=${suffix%%:[0-9]*}
+
+if [[ ($node == "") || ($name == $node) ]]
+then 
+
+echo "$name at $address:"
+
+if [ $1 == 'stop' ]
+then
+    ssh $address 'cd thesis; pgrep java; killall -u orm java'
+fi
+
+if [ $1 == 'start' ]
+then 
+    ssh $address "cd thesis; bash runnodes.sh $address $name" &
+fi
+
+if [ $1 == 'restart' ]
+then 
+    ssh $address 'cd thesis; pgrep java; killall java'
+    ssh $address "cd thesis; bash runnodes.sh $address $name" &
+fi
+
+if [ $1 == 'readlog' ]
+then 
+    ssh $address "cd thesis; cd logs; cd \$(ls -R -l -t | grep orm | awk '{print \$8}' | head -n 1); export latest=\$(ls -R -l -t | grep orm | awk '{print \$8}' | head -n 1); echo \$PWD\/\$latest; $2 \$latest"
+fi
+
+if [ $1 == 'stat' ]
+then 
+    echo 'TODO'
+#TODO run a java stat command
+fi
+
+if [ $1 == 'ssh' ]
+then 
+    ssh $address "$2"
+fi
+fi
+done
