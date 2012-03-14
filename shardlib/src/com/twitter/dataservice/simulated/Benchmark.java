@@ -67,9 +67,6 @@ public class Benchmark {
         logger.info(wp.toString());
         
         int numNodes = Integer.parseInt(prop.getProperty(SystemParameters.NUM_DATA_NODES));
-        int edgeWeight = Integer.parseInt(prop.getProperty(SystemParameters.PER_EDGE_WEIGHT));
-        SystemParameters.reset(edgeWeight, numNodes);
-        logger.info(SystemParameters.instance().toString());
 
         Map<Node, IDataNode> nodes = setupNodes(prop, numNodes);    
         INodeSelectionStrategy sh = setupShardingPolicy(prop, numNodes);

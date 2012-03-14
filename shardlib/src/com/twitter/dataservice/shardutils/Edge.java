@@ -5,12 +5,13 @@ import java.io.Serializable;
 
 import com.twitter.dataservice.parameters.SystemParameters;
 
-public class  Edge implements Serializable
+public class Edge implements Serializable
 {
+	public static final int DEFAULT_EDGE_WEIGHT = 1;
     Pair<Vertex, Vertex> ends;    
     Vertex left;
     Vertex right;
-    public byte[] payload = new byte[SystemParameters.instance().perEdgeWeight];
+    public byte[] payload = new byte[Edge.DEFAULT_EDGE_WEIGHT];
     
     public Edge(Vertex left, Vertex right){
         this.left = left;

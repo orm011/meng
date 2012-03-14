@@ -24,7 +24,6 @@ public abstract class BasicCollector implements MetricsCollector
     public void begin()
     {
         Logger paramslogger = org.slf4j.LoggerFactory.getLogger(AbstractParameters.class);
-        paramslogger.debug("{}", SystemParameters.instance());
         paramslogger.debug("{}", gp);
         paramslogger.debug("{}", wp);
     }
