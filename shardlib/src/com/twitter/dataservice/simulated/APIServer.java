@@ -89,13 +89,13 @@ public class APIServer implements IAPIServer
                 String address = dataNodeAddress[i];
                 int port = Integer.valueOf(dataNodePort[i]);
                 
-                System.out.printf("looking up registry at: %s:%d\n", address, port);
+                log.debug("looking up registry at: {}:{}", address, port);
                 Registry reg = LocateRegistry.getRegistry(address, port);
-                System.out.println("registry: " + reg);
-                System.out.println("registry has list: " + Arrays.toString(reg.list()));
-                System.out.printf("looking up data node %s\n", name);
+                log.debug("registry: {}",reg);
+                log.debug("registry has list: {}", Arrays.toString(reg.list()));
+                log.debug("looking up data node {}\n", name);
                 IDataNode remote = (IDataNode) reg.lookup(name);
-                System.out.println("got data node: " + remote);
+                log.debug("got data node: {}", remote);
                 
                 int id = Integer.parseInt(name.substring(name.split("[0-9]+", 0)[0].length(), name
                         .length()));
@@ -227,10 +227,7 @@ public class APIServer implements IAPIServer
       log.debug("using sharding lib: {}", shardinglib);
       Collection<Node> destinations = shardinglib.getNodes(v);
       log.debug("fanoutQ for vertex: {}, destinations are: {}", v, destinations);
-      log.info("this is code version is modifed for debugging, sends request to all nodes");
-      destinations = nodes.keySet();
-      
-      log.debug("fanoutQ for vertex: {}, OVERRIDING: destinations are: {}", v, destinations);
+
       List<Callable<int[]>> fanoutTasks = new ArrayList<Callable<int[]>>(destinations.size());
       for (Node n: destinations){
           fanoutTasks.add(new FanoutTask(nodes.get(n), n, v, pageSize, offset));
