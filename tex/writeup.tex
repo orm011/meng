@@ -23,46 +23,9 @@
 
 \section{Overview}
 
-At Twitter, there are three main types of query operations expected of the graph store interface. One is querying for edge metadata given the two endpoints {\code getEdge(v,w)}. Metadata includes values such as a timestamp for when the edge was created, and qualifiers for edge such as whether this represents a simple 'follow', or also a  'follow via sms', or even a ''blocked'. Edges are directed, and there need not be symmetry.  A follows B does not imply B follows A, but A follows B is a fact that may be queired via both A and B. At the application level, this enables the site to inform the user  'do I follow person B?' by displaying this fact on a user's profile, or by coloring the 'Follow' button differently to indicate this is already the case.   
+-one nice distinction made in the Zynga techtalk was the difference between a social graph (ie follows that happened at any time in the past), and the 'active' social graph, where the edges disappear unless there is recent activity, this kind of query is of a lot of interest for monitoring growth/etc. How would a graph store facilitate this, if at all?, and, how does this tie in with looking at query logs to identify 'active pairs' and 'active users' (to optimize intersections and fanouts respectively. Also, recommendations that use the active social graph may be better than plain static social graph.
 
-The second one is, given a vertex, return all its adjacent vertices. In a directed graph, there are two directions
-to choose from. Moreover, there are variations on this, we can ask for user given number of vertices, for example the latest one, or all the   {\code getFanout(v)}, The fanout operation with a limited page size enables site visitors to look at the first few followers as well as the first few people a person follows.   Most importantly, the fanout operation enables tweet routing and delivery. Depending on the timeline materialization strategy, Whenever @LadyGaga tweets, the effects of that action must be propagated to @omoll and  everyone else following her in a way that allows for later retrieval.  Or alternatively whenver @ladyGaga signs into the service, tweets from all the people she follows can be retrieved and merged to materilize her timeline. Either of these methods, or a hybrid strategy, need of the fanout operation.
-
-Finally the third query operation is the intersection of the neighbors of two nodes: {\code getIntersection(v,w)}.
-There are several important use cases for this operation. When a user visits a friends page, we may want to show a limited set of common friends.  When a user visits a stranger's profile page, it may be useful to show them friends that already are following that stranger to encourage a follow.
-
-Semantics of intersection: just like getting the fanouts we wish, and then intersecting them outside.
-The only update is to add, modify or delete an edge or its metadata.
-
-% other compelling uses of the store could be discussed. eg naive recommendation., more complicated 
-
-A real workload is made of a mix of these queries and updates. Based on the query logs, the most   query My thesis focuses on the effect different partitioning techniques have on performance. The measure I use for performance is the latency of the individual queries.  
-
-but  I am thinking of  partitioning strategies by starting with one of the operations and thinking backward to something that would improve their performance. For that reason, the benchmarks I have in mind are: 100\% \edgeq, 100\% \fanoutq, 100\% \intersectq and a mix
-with realistic twitter proportions. \todonote[fancyline]{put workload numbers from wiki here}. 
-xo
-The thoughts on strategies are here:
-
-\begin{enumerate}
-\item \edgeq: no strategy targets to optimize this in particular, but we should know clearly whether they  perform well on this.
-\item \fanoutq: fanouts in a graph with wide variation in degree would improve with treating popular users differntly. The amount of benefit from this depends on several factors. A first factor is whether nodes with large degree
-have fanouts more often than nodes with smaller followings. Another factor is whether the rest of the system takes advantage of the parallelism in this optmized \fanoutq.  \draftnote{I am not worrying about the rest of the system for my thesis, but in reality it would matter if the client does not process stuff in parallel. Also, looking at actual data from queries would help me 1) model simulated workloads, 2) talk about it in this text}
-\item \intersectq: pairs that historically intersect often should be stored together. \draftnote{again, i need historical data to effectively model this}
-\item \randomwalk: cluster actual graph, replicate. \todonote{talk to Raghavendra, Pankaj about this, and try reading more about it. This operation seems less important but kind of exciting, and would give room to looking at other kinds of work.  Separate note: A stab at interface: could be some thing like {\code List<Pair<Node,Int>> randomWalkFrom(v, depth)} where hopefully depth is 2 or 3, for example. Also, this kind of query can return an approximate, potentially inaccurate result if this results in faster, online versions of it}
-\end{enumerate}
-
-This thesis presents three sections. The first is the design of three strategies based on the actual api operations we would like to support. \draftnote{Some iteration on design necessarily involves looking at real data (to get a better feel for what won't be effective). For example, I have used what Raghavendra emailed in September to evaluate viability for the \fanoutq strategy.} Second is the definiton and results of simulated workloads on a bare bones version of a distributed graph db.This bare bones version is not intended to deal with failures nor with online resharding/rebalancing.  In simulated workloads I have the option of changing things like skew, correlations and simulatied graph structure, the more I know about the real ones the better I can decide what to vary and to design the benchmark generator with it in mind. Finally, while the simulation gives the thesis a more general conceptual coverage because I can explore different parameters, sizes and hypothetical scenarios, the third section is the integration and benchmarking of the strategies on Twitter's graph service. 
-
-\draftnote{right now I want to focus on getting infrastructure/benchmarks done for the \fanoutq and \intersectq before looking at the other stuff. This week I am trying to get to run a simulated workload good enough to make meaningful graphs about \fanoutq from it and write them up in this document. You can check what I have done so far on that front in my repo, or on the review}
-
-\draftnote{one nice distinction made in the Zynga techtalk was the difference between a social graph (ie follows that happened at any time in the past), and the 'active' social graph, where the edges disappear unless there is recent activity, this kind of query is of a lot of interest for monitoring growth/etc. How would a graph store facilitate this, if at all?, and, how does this tie in with looking at query logs to identify 'active pairs' and 'active users' (to optimize intersections and fanouts respectively. Also, recommendations that use the active social graph may be better than plain static social graph.}
-
-
-\todonote{think about performance effects of doing these reads while there are updates happening}
-\draftnote{Don't read the rest, its taken from the wiki, and its more of a text dump}
-
-\draftnote{relation between keeping this type of lookup table and caching. conceptually, both depend on there being a non-uniform access pattern that we can exploit to improve performance. Also think about how a cache keeps up to date}
-
+-relation between keeping this type of lookup table and caching. conceptually, both depend on there being a non-uniform access pattern that we can exploit to improve performance. Also think about how a cache keeps up to date
 
 \section{background and reading}
 
