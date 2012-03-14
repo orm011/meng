@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -54,94 +55,42 @@ public class Benchmark {
         String logPropertyFile = args[0];
         String benchmarkPropertyFile = args[1];
         
-        PropertyConfigurator.configure(logPropertyFile);
-        
+        PropertyConfigurator.configure(logPropertyFile);        
         logger = org.slf4j.LoggerFactory.getLogger(Benchmark.class);        
         
-        Properties prop = new Properties();
-        
-        try
-        {
-            prop.load(new FileInputStream(benchmarkPropertyFile));
-            
-            //copy the properties file as a whole int stdio and the log.
-            BufferedReader properties = new BufferedReader(new FileReader(new File(benchmarkPropertyFile)));
-            String current;
-            while ((current = properties.readLine()) != null){
-                System.out.println(current);
-                logger.debug(current);
-            }
-            
-            System.out.println();
-            
-        } catch (FileNotFoundException e)
-        {
-            throw new RuntimeException(e);
-        } catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
+        Properties prop = parsePropertyFile(benchmarkPropertyFile); 
+        logger.info(prop.toString());
+        GraphParameters gp = getGraphParams(prop); 
+        logger.info(gp.toString());
 
+        WorkloadParameters wp = getWorkloadParams(prop);
+        logger.info(wp.toString());
         
-        //set up graph
-        GraphParameters gp = new GraphParameters.Builder()
-        .degreeBoundAndTargetAvg(
-                Integer.parseInt(prop.getProperty(GraphParameters.DEGREE_RATIO_BOUND)), 
-                Integer.parseInt(prop.getProperty(GraphParameters.AVERAGE_DEGREE)))
-        .degreeSkew(
-                Double.parseDouble(prop.getProperty(GraphParameters.SKEW_PARAMETER)))
-        .numberVertices(
-                Integer.parseInt(prop.getProperty(GraphParameters.NUMBER_VERTICES))).
-        build();
-        
-        //set up workload
-        WorkloadParameters wp = new WorkloadParameters.Builder()
-        .numberOfQueries(
-                Integer.parseInt(prop.getProperty(WorkloadParameters.NUMBER_OF_QUERIES)))
-        .percentEdge(
-                Integer.parseInt(prop.getProperty(WorkloadParameters.PERCENT_EDGE_QUERIES)))
-        .percentVertex(
-                Integer.parseInt(prop.getProperty(WorkloadParameters.PERCENT_FANOUT_QUERIES)))
-        .skew(
-                Double.parseDouble(prop.getProperty(WorkloadParameters.QUERY_SKEW)))
-        .build();
-
-        String logName = prop.getProperty("workload.inputLogName");
-        
-        //reset system params
         int numNodes = Integer.parseInt(prop.getProperty(SystemParameters.NUM_DATA_NODES));
         int edgeWeight = Integer.parseInt(prop.getProperty(SystemParameters.PER_EDGE_WEIGHT));
         SystemParameters.reset(edgeWeight, numNodes);
-        
-        
-        //print all parsed params
-        System.out.println(gp);
-        System.out.println(wp);
-        System.out.println(SystemParameters.instance());
-        System.out.println(wp.getNumberOfQueries());
-        
-        //init shardlib, apiServer
-        String[] names = new String[numNodes];
-        String[] address = new String[numNodes];
-        String[] ports = new String[numNodes];        
-        for (int i = 0; i < numNodes; i++){
-            names[i] = "node" + i;
-            String nodeAddress = prop.getProperty(names[i]);
-            if (nodeAddress == null) throw new IllegalArgumentException();
+        logger.info(SystemParameters.instance().toString());
 
-            String[] addressWithPort = nodeAddress.split(":");
-            address[i] = addressWithPort[0];
-            ports[i] = addressWithPort[1];
-        }
-        
+        Map<Node, IDataNode> nodes = setupNodes(prop, numNodes);    
+        INodeSelectionStrategy sh = setupShardingPolicy(prop, numNodes);
+        logger.info(sh.getClass().getCanonicalName());
+
+        IAPIServer apiServer = new APIServer(nodes, sh);
+        runBenchmark(gp, wp, apiServer);
+        System.exit(0);
+    }
+    
+    
+    private static INodeSelectionStrategy setupShardingPolicy(Properties prop, int numNodes) {
         String policy = prop.getProperty("system.shardingPolicy");         
         int ROUGHNUMLOOKUP = 9000000; //abt 9 million in lookup table
         
+        //currently, if using the other strategies, is tries to read a file for the exceptions.
+        //need to change this so it uses benchmark itself?
         INodeSelectionStrategy sh = null;
         System.out.println(policy);
         if (policy.equals("sharding.vertex")){
             Integer numShards = Integer.parseInt(prop.getProperty("vertex.numShards"));
-            System.out.println("numShards: " + numShards);      
             sh = new VertexHashSharding(numNodes, numShards);
         } else if (policy.equals("sharding.lookup")){
             String exceptionsFile = prop.getProperty("lookup.exceptions");
@@ -165,42 +114,36 @@ public class Benchmark {
         } else {
             throw new RuntimeException(String.format("invalid system.shardingPolicy: %s", policy));
         }
-        
-        logger.info(sh.getClass().getCanonicalName());
+      
+        return sh;
+	}
 
-        Map<Node, IDataNode> nodes = APIServer.getRemoteNodes(names, address, ports);
-        IAPIServer apiServer = new APIServer(nodes, sh);
-        runBenchmark(gp, wp, apiServer, logName);
-        System.exit(0);
-    }
-    
-    
-    public static int[] loadExceptionFilePar(String filename, int num){
-        //format is %id\t...whatever else 
 
-        List<ArrayList<Integer>> arrays = new LinkedList<ArrayList<Integer>>();
-        //TODO: add initial arrays
-        ExecutorService es = Executors.newFixedThreadPool(num);
-        
-        ArrayList<Integer> accumulator = new ArrayList<Integer>();
-        
-        BufferedReader br;
-        try
-        {
-            br = new BufferedReader(new FileReader(filename));
-        } catch (FileNotFoundException e)
-        {
-            throw new RuntimeException(e);
+	private static Map<Node, IDataNode> setupNodes(Properties prop, int numNodes) {
+        //init shardlib, apiServer
+        String[] names = new String[numNodes];
+        String[] address = new String[numNodes];
+        String[] ports = new String[numNodes];        
+        for (int i = 0; i < numNodes; i++){
+            names[i] = "node" + i;
+            String nodeAddress = prop.getProperty(names[i]);
+            if (nodeAddress == null) throw new IllegalArgumentException();
+
+            String[] addressWithPort = nodeAddress.split(":");
+            address[i] = addressWithPort[0];
+            ports[i] = addressWithPort[1];
         }
-        
-        String current;
+
+        return APIServer.getRemoteNodes(names, address, ports);
+	}
+
+
+	private static Properties parsePropertyFile(String benchmarkPropertyFile) {
+        Properties prop = new Properties();
         try
         {
-            while ((current = br.readLine()) != null){
-                String[] parts = current.split("[\t| ]", 2);
-                accumulator.add(Integer.parseInt(parts[0]));
-            }
-        } catch (NumberFormatException e)
+            prop.load(new FileInputStream(benchmarkPropertyFile));
+        } catch (FileNotFoundException e)
         {
             throw new RuntimeException(e);
         } catch (IOException e)
@@ -208,10 +151,42 @@ public class Benchmark {
             throw new RuntimeException(e);
         }
         
-        return Ints.toArray(accumulator);        
-    }
-    
-    
+        return prop;
+	}
+
+
+	private static WorkloadParameters getWorkloadParams(Properties prop) {
+        int num = Integer.parseInt(prop.getProperty(WorkloadParameters.NUMBER_OF_QUERIES));
+        int edge = Integer.parseInt(prop.getProperty(WorkloadParameters.PERCENT_EDGE_QUERIES));
+        int fanout = Integer.parseInt(prop.getProperty(WorkloadParameters.PERCENT_FANOUT_QUERIES));
+        int intersection = Integer.parseInt(prop.getProperty(WorkloadParameters.PERCENT_INTERSECTION_QUERIES));
+        double sk = Double.parseDouble(prop.getProperty(WorkloadParameters.QUERY_SKEW));
+
+        WorkloadParameters wp = new WorkloadParameters.Builder()
+        .numberOfQueries(num)
+        .queryTypeDistribution(edge, fanout, intersection)
+        .skew(sk)
+        .build();
+        
+        return wp;
+	}
+
+
+	private static GraphParameters getGraphParams(Properties prop) {
+        int degreeRatioBound = Integer.parseInt(prop.getProperty(GraphParameters.DEGREE_RATIO_BOUND)); 
+        int avgDegree = Integer.parseInt(prop.getProperty(GraphParameters.AVERAGE_DEGREE));
+        double graphsk = Double.parseDouble(prop.getProperty(GraphParameters.SKEW_PARAMETER));
+        int numVer = Integer.parseInt(prop.getProperty(GraphParameters.NUMBER_VERTICES));
+
+        GraphParameters gp = new GraphParameters.Builder()
+        .degreeBoundAndTargetAvg(degreeRatioBound, avgDegree)
+        .degreeSkew(graphsk)
+        .numberVertices(numVer)
+        .build();
+        
+        return gp;
+	}
+	    
     public static int[] loadExceptionFile(String filename){
         //format is %id\t...whatever else 
         
@@ -249,75 +224,61 @@ public class Benchmark {
     public static final String NUM_NODES_PER_EXCEPTION = "sharding.numNodesPerException";
     public static final String NUM_EXCEPTIONS = "sharding.numExceptions";
     
-    public static void loadGraphFromFile(String filename){
-        //TODO: implement this if needed, maybe not needed.
-    }
-    
-    public static void resetAndCheck(IAPIServer apiServer){
-    	
-        long time = System.nanoTime();
-        apiServer.putFanout(0, new int[]{1});
-        System.out.printf("putFanout roundtrip: %d musec\n", (System.nanoTime() - time)/1000);
+    public static void runBenchmark(GraphParameters graphParams, WorkloadParameters workloadParams, IAPIServer apiServer){
 
-        long time2 = System.nanoTime();
-        List<Vertex> ans = apiServer.getFanout(Vertex.ZERO, 1, 0);
-        System.out.printf("getFanout roundtrip: %d musec\n", (System.nanoTime() - time2)/1000);
-        System.out.println("answer: " + ans);   
-    }
-    
-    public static void stat(IAPIServer apiServer){
-    	
-    }
-    
-    public static void runBenchmark(GraphParameters graphParams, WorkloadParameters workloadParams, IAPIServer apiServer, String logName){
-
-      //Graph graph = SkewedDegreeGraph.makeSkewedDegreeGraph(graphParams); //TODO: change this
-      //MetricsCollector omc = new LatencyTrackingAPIServer.LoggerCollector(graphParams, workloadParams);
+      Graph graph = SkewedDegreeGraph.makeSkewedDegreeGraph(graphParams);
       MetricsCollector omc = new LatencyTrackingAPIServer.InMemoryCollector(graphParams, workloadParams);
       IAPIServer api = new LatencyTrackingAPIServer(apiServer, omc);      
       
-      //Iterator<Pair<Integer, int[]>> it = graph.fanoutIterator();
-      //Iterator<Edge> it = graph.graphIterator();
+      Iterator<Pair<Integer, int[]>> it = graph.fanoutIterator();
       omc.begin();
       
-      System.out.println(api.stat());
-//      //log degrees for auditing later
-//      Logger graphLogger = LoggerFactory.getLogger(Graph.class);      
-//      for (int i = 0; i < graphParams.getNumberVertices();  ++i) graphLogger.debug("{}", ((SkewedDegreeGraph)graph).getDegree(i));
-//      System.out.println("\n");
-//      System.out.println("done logging graph");
-//      
-      //TODO: add call to reset all from here.
-//      int i = 0;      
-//      Ticker t = Ticker.systemTicker();
-//      while (it.hasNext()){
-//          long start = t.read();
-//          Pair<Integer, int[]> current = it.next();
-//          api.putFanout(current.getLeft(), current.getRight());
-//          i++;
-//      }
-//      System.out.println("done loading graph");
+      Collection<IAPIServer.Stats> nodestats = api.stat();
+      logger.info(prettyPrintStats(nodestats));
+
+      int i = 0;      
+      Ticker t = Ticker.systemTicker();
+      long start = t.read();
+      while (it.hasNext()){
+          Pair<Integer, int[]> current = it.next();
+          api.putFanout(current.getLeft(), current.getRight());
+          i++;
+      }
+
+      System.out.printf("done loading graph. load time = %d musec\n", (t.read() - start)/1000);
+      logger.info(prettyPrintStats(api.stat()));
+      Iterator<Query> ot = graph.workloadIterator(workloadParams);
       
-//      Iterator<Query> ot = graph.workloadIterator(workloadParams);
-      
-      //TODO: be more specific about the exception, at the work node level maybe?
-//      logger.debug(String.format("logName: %s, numqueries: %d\n", logName, workloadParams.getNumberOfQueries()));
-//      Iterator<Query> ot = new LogReplayBenchmark(logName, workloadParams.getNumberOfQueries());
-//      while (ot.hasNext()) {
-//          Query q = ot.next();
-//          List<Vertex> answer;
-//          
-//          try {
-//              logger.debug(q.toString());
-//              answer = q.execute(api);
-//              logger.debug(answer.toString());
-//          } catch (RuntimeException re){
-//              logger.error("{} for query: {}", re.getMessage(), q);
-//          }
-//          
-//      }
+      while (ot.hasNext()) {
+          Query q = ot.next();
+          List<Vertex> answer;
+          
+          //TODO: be more specific about the exception, at the work node level maybe?
+          try {
+              logger.debug(q.toString());
+              answer = q.execute(api);
+              logger.debug(answer.toString());
+          } catch (RuntimeException re){
+              logger.error("{} for query: {}", re.getMessage(), q);
+          }          
+      }
  
       omc.finish();
-      System.out.println("done. log saved at: \n" + TimestampNameFileAppender.getLogName());
-    }   
+      logger.info(prettyPrintStats(api.stat()));
+      System.out.println("done running benchmark. log saved at: \n" + TimestampNameFileAppender.getLogName());
+    }
+
+
+	private static String prettyPrintStats(Collection<IAPIServer.Stats> nodestats) {
+		StringBuilder sb = new StringBuilder();
+		
+		sb.append("Node Stats:\n");
+		for (IAPIServer.Stats st : nodestats){
+			  sb.append("\t");
+			  sb.append(st.toString());
+			  sb.append("\n");
+		}
+		
+		return sb.toString();
+	}
 }

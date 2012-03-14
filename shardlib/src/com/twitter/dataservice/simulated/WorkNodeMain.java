@@ -20,10 +20,12 @@ import com.twitter.dataservice.shardutils.Vertex;
 
 public class WorkNodeMain
 {
+	static int DEFAULT_VERTICES = 10000;
+	
     public static void main(String[] argv){
         
         if (argv.length == 0){
-            System.out.println("usage: NodeName-[loadFile] [NodeName-[loadFile]...] ");
+            System.out.println("usage: NodeName...");
             System.exit(1);    
         }
                 
@@ -36,33 +38,21 @@ public class WorkNodeMain
             
             List<IDataNode> nodes = new LinkedList<IDataNode>();
          
-            Ticker t = Ticker.systemTicker();
-            long start = t.read();
             for (String namefile: argv){
-                String name = namefile.split("-")[0];
-                
-                System.out.printf("Registering work node %s...\n", name);
-                CompactDataNode dn = new CompactDataNode();
+                String[] nodeparams = namefile.split("-");
+            	String name = nodeparams[0];
+            	int size = DEFAULT_VERTICES;
+            	                
+                CompactDataNode dn = new CompactDataNode(size, name);
                 nodes.add(dn);
                 IDataNode stub =
                     (IDataNode) UnicastRemoteObject.exportObject(dn, 0);
-                registry.rebind(name, stub);
-                
-                if (namefile.split("-").length > 1){
-                    String filename = namefile.split("-")[1];    
-                    System.out.println(String.format("loading %s using local file %s", name, filename));
-                    loadFromLocal(filename, dn);
-                }
-                
+                System.out.printf("Registering work node %s...\n", name);
+                registry.rebind(name, stub);                                
                 System.out.println("Success");
             }
             
-            System.out.println("loading done. time: " + (t.read() - start));
-//            while (true) {
-//                Thread.sleep(5000);
-//                System.out.println("sleeping..");
-//            }
-//            
+
         } catch (Exception e){
             e.printStackTrace();
             System.exit(1);

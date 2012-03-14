@@ -53,10 +53,11 @@ public class CompactDataNode extends AbstractDataNode implements IDataNode
     @Override
     public Edge getEdge(Vertex left, Vertex right) throws RemoteException
     {
-        log.info(String.format("getEdge: %s %s\n", left, right));
+        log.debug(String.format("getEdge: %s %s\n", left, right));
         int[] fans = fanouts.get(left.getId());
         
         if (fans == null) fans = new int[0];
+        
         
         int index;
         if ((index = Arrays.binarySearch(fans, right.getId())) >= 0){
@@ -69,22 +70,22 @@ public class CompactDataNode extends AbstractDataNode implements IDataNode
     @Override
     public int[] getFanout(Vertex v, int pageSize, int offset) throws RemoteException
     {     
-        log.info(String.format("getFanout: %s, %d, %d\n", v, pageSize, offset));;        
+        log.debug("getFanout: {}, {}, {}", new Object[]{v, pageSize, offset});;        
         int[] fullfanout = fanouts.get(v.getId());
         
         if (fullfanout == null)  throw new RemoteException(v.toString() + " not found");
         
         int pos = UtilMethods.getInsertionIndex(fullfanout, offset);
         int[] result = Arrays.copyOfRange(fullfanout, pos, Ints.min(new int[]{pos + pageSize, fullfanout.length}));
-        log.info(String.format("fanout answer: " + Arrays.toString(result)));
+        
+        log.debug("fanout answer. size: {}", result.length);
         return result;
     }
 
     @Override
     public int[] getIntersection(Vertex v, Vertex w, int pageSize, int offset) throws RemoteException
     {
-        //System.out.printf("getIntersection %s, %s, %d,  %d\n", v, w, pageSize, offset);
-
+        log.debug("getIntersection {}, {}, {}, {}", new Object[]{v, w, pageSize, offset});
         int[] vfanout = fanouts.get(v.getId());
         int[] wfanout = fanouts.get(w.getId());
         
@@ -95,12 +96,12 @@ public class CompactDataNode extends AbstractDataNode implements IDataNode
     }
 
     public void putFanout(int id, int[] fanouts){
-        System.out.println("WARNING: remote put fanout: " +  id);
+        log.debug("remote put fanout: {}", id);
         this.fanouts.put(id, fanouts);
     }
     
     public void localPutFanout(int id, int[] fanouts){
-        //System.out.println("local put fanout: " +  id + "fanouts: " + Arrays.toString(fanouts));
+        log.debug("local put fanout: {}", id);
         this.fanouts.put(id, fanouts);
     }
     
@@ -108,14 +109,14 @@ public class CompactDataNode extends AbstractDataNode implements IDataNode
     @Override
     public void putEdge(Edge e) throws RemoteException
     {
-        System.out.println("WARNING: call to putEdge operation. Ignoring.");
+        log.warn("call to putEdge operation. Ignoring.");
         throw new UnsupportedOperationException();
     }
 
     @Override
     public void reset() throws RemoteException
     {
-        System.out.println("RESETTING...");
+        log.warn("RESETTING...");
         fanouts.clear();
     }
 

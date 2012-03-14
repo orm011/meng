@@ -73,7 +73,7 @@ public class GraphParameters extends AbstractParameters {
     
     public static class Builder {
         int numberVertices;
-        int upperDegreeBound;
+        int degreeRatioBound;
         int average;
         double degreeSkewParameter;
 
@@ -83,13 +83,14 @@ public class GraphParameters extends AbstractParameters {
         return this;
     }
     
-    public Builder degreeBoundAndTargetAvg(int max, int average){
-        this.upperDegreeBound = max;
-        this.average = average;
+    public Builder degreeBoundAndTargetAvg(int maxOverMinRatio, int targetAverage){
+        this.degreeRatioBound = maxOverMinRatio;
+        this.average = targetAverage;
         return this;
     }
     
     public Builder degreeSkew(double sk){
+    	assert sk > 0; // should this be > 1?
         this.degreeSkewParameter = sk;
         return this;
     }
@@ -102,7 +103,7 @@ public class GraphParameters extends AbstractParameters {
             
         if (!check) throw new IllegalArgumentException("graph params invalid");
         
-        return new GraphParameters(this.numberVertices, this.numberVertices*this.average, this.upperDegreeBound, this.average, this.degreeSkewParameter);
+        return new GraphParameters(this.numberVertices, this.numberVertices*this.average, this.degreeRatioBound, this.average, this.degreeSkewParameter);
         }
     }
 }
