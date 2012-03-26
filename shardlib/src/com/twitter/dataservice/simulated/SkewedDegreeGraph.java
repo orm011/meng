@@ -105,10 +105,10 @@ public class SkewedDegreeGraph implements Graph {
       public int getDisconnnectedVertices(){
           return disconnected;
       }
-      
-      //TODO: add unit test
-      public class FanoutIterator implements Iterator<Pair<Integer, int[]>>{
 
+      
+      public class FanoutIterator implements Iterator<Pair<Integer, int[]>>{ 
+    	  
         int currentVertex = disconnected;
         @Override
         public boolean hasNext()
@@ -123,8 +123,8 @@ public class SkewedDegreeGraph implements Graph {
             for (int i = 0; i < fanouts.length; i++){
                 fanouts[i] = i;
             }
-            currentVertex++;
-            return new Pair<Integer, int[]>(currentVertex, fanouts);
+            int old = currentVertex++;
+            return new Pair<Integer, int[]>(old, fanouts);
         }
 
         @Override

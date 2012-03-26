@@ -238,6 +238,7 @@ public class Benchmark {
       long start = t.read();
       while (it.hasNext()){
           Pair<Integer, int[]> current = it.next();
+          logger.debug("puting vertex {}, array length: {}", current.getLeft(), current.getRight().length);
           api.putFanout(current.getLeft(), current.getRight());
           i++;
       }
@@ -254,7 +255,7 @@ public class Benchmark {
           try {
               logger.debug(q.toString());
               answer = q.execute(api);
-              logger.debug(answer.toString());
+              logger.debug(answer.subList(0, 10).toString());
           } catch (RuntimeException re){
               logger.error("{} for query: {}", re.getMessage(), q);
           }          

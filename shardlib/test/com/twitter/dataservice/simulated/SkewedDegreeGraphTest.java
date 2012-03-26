@@ -14,6 +14,7 @@ import org.junit.Test;
 
 
 import com.twitter.dataservice.shardutils.Edge;
+import com.twitter.dataservice.shardutils.Pair;
 import com.twitter.dataservice.shardutils.TwoTierHashTest;
 import com.twitter.dataservice.shardutils.Vertex;
 import com.twitter.dataservice.parameters.GraphParameters;
@@ -158,7 +159,7 @@ public class SkewedDegreeGraphTest
     @Test
     public void testConstantGraph(){
         
-       for (int i = 1; i < 20; i++){
+       for (int i = 1; i < 10; i++){
            GraphParameters gp = new GraphParameters.Builder()
                .degreeBoundAndTargetAvg(1, 1 << i)
                .numberVertices(100)
@@ -175,6 +176,27 @@ public class SkewedDegreeGraphTest
            
            TwoTierHashTest.assertBalanced((1 << i)*100, 100, 0.0, counter);
        }
+    }
+    
+    @Test public void testFanoutIter(){
+     	int numvert = 10;
+    	int fanoutsz = 10;
+    	GraphParameters gp = new GraphParameters.Builder()
+    	.degreeBoundAndTargetAvg(1, fanoutsz)
+    	.numberVertices(numvert)
+    	.degreeSkew(1)
+    	.build();
+    	
+    	SkewedDegreeGraph sk = SkewedDegreeGraph.makeSkewedDegreeGraph(gp);
+    	Iterator<Pair<Integer, int[]>> it = sk.fanoutIterator();
+    	for (int i = 0; i < numvert; i++){
+    		Assert.assertTrue(it.hasNext());
+    		Pair<Integer, int[]> curr = it.next();
+    		Assert.assertEquals(Integer.valueOf(i), curr.getLeft());
+    		Assert.assertEquals(fanoutsz, curr.getRight().length);
+    	}
+    	
+    	Assert.assertTrue(!it.hasNext());
     }
         
 }

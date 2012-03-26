@@ -201,19 +201,16 @@ public class APIServer implements IAPIServer
                 log.debug("Success at task: {}", tasks.get(i));
             } catch (InterruptedException e)
             {
-                log.debug("InterruptedException: {}. At task {} for node at position {}", new Object[]{e, tasks.get(i), i});
-                //throw new RuntimeException(e);
+                log.warn("InterruptedException: {}. At task {} for node at position {}", new Object[]{e, tasks.get(i), i});
             } catch (ExecutionException e)
             {
-                log.debug("ExecutionException: {}. At task {} for node at positon {}", new Object[]{e, tasks.get(i), i});
-                //throw new RuntimeException(e);
+                log.warn("ExecutionException: {}. At task {} for node at positon {}", new Object[]{e, tasks.get(i), i});                //throw new RuntimeException(e);
             }
             
             results.add(curr);
             i++;
         }
 
-        //merge in sorted order
         Iterator<Integer> merged = Iterators.mergeSorted(results, Collections.reverseOrder(Collections.reverseOrder()));
         return merged;
     }
