@@ -1,14 +1,9 @@
 package com.twitter.dataservice.simulated;
 
 import java.rmi.RemoteException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
-import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,10 +28,7 @@ public class CompactDataNode extends AbstractDataNode implements IDataNode
     private final String name;
     
     
-    public CompactDataNode(int numVertices, String name){
-        String logPropertyFile = "dataNodelog4j.properties";
-        PropertyConfigurator.configure(logPropertyFile);
-        
+    public CompactDataNode(int numVertices, String name){       
         fanouts = new HashMap<Integer, int[]>(numVertices);    	
         this.name = name;
     }

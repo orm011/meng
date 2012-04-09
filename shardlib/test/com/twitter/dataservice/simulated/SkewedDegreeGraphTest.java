@@ -1,12 +1,15 @@
 package com.twitter.dataservice.simulated;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Random;
 
 import junit.framework.Assert;
 
@@ -17,9 +20,12 @@ import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Pair;
 import com.twitter.dataservice.shardutils.TwoTierHashTest;
 import com.twitter.dataservice.shardutils.Vertex;
+import com.twitter.dataservice.simulated.Samplable;
+import com.twitter.dataservice.simulated.UniformSamplable;
 import com.twitter.dataservice.parameters.GraphParameters;
+import com.twitter.dataservice.parameters.SamplableBuilder;
 import com.twitter.dataservice.parameters.WorkloadParameters;
-
+import com.twitter.dataservice.parameters.SamplableBuilder.DistributionType;
 
 
 public class SkewedDegreeGraphTest
@@ -93,6 +99,7 @@ public class SkewedDegreeGraphTest
     
     @Test
     public void testWorkloadIter(){
+    	
         SkewedDegreeGraph g = SkewedDegreeGraph.makeSkewedDegreeGraph(10, 100, 10, 1);
         
         List<TestingWorkNode> testNodes = new ArrayList<TestingWorkNode>(1);
@@ -102,7 +109,7 @@ public class SkewedDegreeGraphTest
         
         APIServer testApi = APIServer.apiWithGivenWorkNodes(testNodes);
         for (int i = 0; i < 10; ++i){
-            WorkloadParameters params = (new WorkloadParameters.Builder()).numberOfQueries(i).queryTypeDistribution(100, 0, 0).build();
+            WorkloadParameters params = (new WorkloadParameters.Builder()).numberOfQueries(i).queryTypeDistribution(100, 0, 0).build(g.getNumVertices());
             Iterator<Query> itq = g.workloadIterator(params);
             int count = 0;
             
@@ -113,7 +120,10 @@ public class SkewedDegreeGraphTest
             
             Assert.assertEquals(i, count);
         }
+        
     }
+    
+
     
     @Test
     public void testWorkloadAndApi(){
@@ -125,7 +135,7 @@ public class SkewedDegreeGraphTest
         APIServer testApi = APIServer.apiWithGivenWorkNodes(testNodes);
         
         int numq = 100;
-        WorkloadParameters params = (new WorkloadParameters.Builder()).numberOfQueries(numq).queryTypeDistribution(100, 0, 0).build();
+        WorkloadParameters params = (new WorkloadParameters.Builder()).numberOfQueries(numq).queryTypeDistribution(100, 0, 0).build(g.getNumVertices());
         Iterator<Query> itq = g.workloadIterator(params);
 
         while (itq.hasNext()){   
@@ -141,10 +151,10 @@ public class SkewedDegreeGraphTest
      */
     @Test
     public void testWorkloadGeneratesOne(){
+    	Graph g = new SkewedDegreeGraph(new int[]{1});
         WorkloadParameters wp = new WorkloadParameters.Builder().numberOfQueries(10)
-        .percentVertex(100).percentEdge(0).skew(0.01).build();  //low skew should not affect this, 
+        .percentVertex(100).percentEdge(0).skew(0.01).build(g.getNumVertices());  //low skew should not affect this, 
         
-        Graph g = new SkewedDegreeGraph(new int[]{1});
         
         Iterator<Query> work = g.workloadIterator(wp);
         
@@ -160,12 +170,15 @@ public class SkewedDegreeGraphTest
     public void testConstantGraph(){
         
        for (int i = 1; i < 10; i++){
-           GraphParameters gp = new GraphParameters.Builder()
-               .degreeBoundAndTargetAvg(1, 1 << i)
-               .numberVertices(100)
-               .degreeSkew(1.0)
-               .build();
-           
+    	   SamplableBuilder sb = new SamplableBuilder();
+    	   sb.setType(DistributionType.ZIPF);
+    	   sb.setHighLimit((1 << i) + 1);
+    	   sb.setLowLimit(1 << i);
+    	   sb.setZipfbins(1);
+    	   sb.setSkew(1.0f);
+    	   
+    	   GraphParameters gp = new GraphParameters(100, sb.build());
+
            SkewedDegreeGraph g = SkewedDegreeGraph.makeSkewedDegreeGraph(gp);
            Iterator<Edge> git = g.graphIterator();
            MapBackedCounter<Vertex> counter = new MapBackedCounter<Vertex>();
@@ -181,11 +194,12 @@ public class SkewedDegreeGraphTest
     @Test public void testFanoutIter(){
      	int numvert = 10;
     	int fanoutsz = 10;
-    	GraphParameters gp = new GraphParameters.Builder()
-    	.degreeBoundAndTargetAvg(1, fanoutsz)
-    	.numberVertices(numvert)
-    	.degreeSkew(1)
-    	.build();
+    	
+    	SamplableBuilder sb = new SamplableBuilder();
+    	sb.setType(DistributionType.CONSTANT);
+    	sb.setValue(fanoutsz);
+    	
+    	GraphParameters gp = new GraphParameters(numvert, sb.build());
     	
     	SkewedDegreeGraph sk = SkewedDegreeGraph.makeSkewedDegreeGraph(gp);
     	Iterator<Pair<Integer, int[]>> it = sk.fanoutIterator();

@@ -13,5 +13,7 @@ public interface Graph
     Iterator<Edge> graphIterator();
     Iterator<Pair<Integer, int[]>> fanoutIterator();
     Iterator<Query> workloadIterator(WorkloadParameters params);
+    int getNumVertices();
+    int getActualDegree();
     
 }  

@@ -16,58 +16,64 @@ import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Pair;
 import com.twitter.dataservice.shardutils.Vertex;
 import com.twitter.dataservice.parameters.GraphParameters;
+import com.twitter.dataservice.parameters.SamplableBuilder;
 import com.twitter.dataservice.parameters.WorkloadParameters;
+import com.twitter.dataservice.parameters.SamplableBuilder.DistributionType;
 
-//graph generation class, using the zipf distribution idea, and not really faithfully generating the graph, but only the degrees
+
+//graph generation class, not really faithfully generating the graph, but only the degrees 
+//(used for the fanout only)
 public class SkewedDegreeGraph implements Graph {
       
       private final int maxDegree;
       private final int numVertices;
       private final int[] degreeTable;      
-      
-      //because we cannot control it perfectly
       private final int numEdges;
       private final int disconnected;
+      
+      public int getNumVertices() {
+		return numVertices;
+	}
+
+
       /*
        * @param degreeSkewParameter must be > 0, the larger it is the less common it is
        * to have any nodes with large degree.
        * @param graphSize: number of vertices in the graph
+       * this kept here for compatibility with previous api.
        */
-      
-      static public SkewedDegreeGraph makeSkewedDegreeGraph(GraphParameters gp){
-          return SkewedDegreeGraph.makeSkewedDegreeGraph(gp.getNumberVertices(), gp.getNumberEdges(), 
-                  gp.getUpperDegreeBound(), gp.getDegreeSkewParameter());
+      static public SkewedDegreeGraph makeSkewedDegreeGraph(int numVertices, int targetNumberOfEdges, int upperDegreeBound, double degreeSkew){
+    	  GraphParameters.Builder gpb = new GraphParameters.Builder();
+    	  SamplableBuilder rand = new SamplableBuilder();
+    	  rand.setHighLimit(upperDegreeBound + 1);
+    	  rand.setLowLimit(1);
+    	  rand.setSkew((float)degreeSkew);
+    	  rand.setType(DistributionType.ZIPF);
+    	  rand.setZipfbins(upperDegreeBound);
+    	  
+    	  GraphParameters gp = gpb.numberVertices(numVertices).degreeGenerator(rand.build()).build();
+    	  return makeSkewedDegreeGraph(gp);
       }
       
-      static public SkewedDegreeGraph makeSkewedDegreeGraph(int numVertices, int targetNumberOfEdges, int upperDegreeBound, double degreeSkew){
-          if (numVertices < 1 || upperDegreeBound< 1 || degreeSkew <= 0)
+      static public SkewedDegreeGraph makeSkewedDegreeGraph(GraphParameters gp){
+          return SkewedDegreeGraph.makeSkewedDegreeGraph(gp.getNumberVertices(), gp.getSamplable());
+      }
+      
+      static public SkewedDegreeGraph makeSkewedDegreeGraph(int numVertices, Samplable gen){
+          if (numVertices < 1 )
               throw new IllegalArgumentException();
 
           int[] aDegreeTable  = new int[numVertices];
-          ZipfDistributionImpl degGenerator = new ZipfDistributionImpl(upperDegreeBound, degreeSkew);
-              
           int count = 0;
           for (int currentVertex = 0; currentVertex < numVertices; currentVertex++){
-              
-              try {
-                  aDegreeTable[currentVertex] = degGenerator.sample();
+                  aDegreeTable[currentVertex] = gen.sample();
+                  if (!(aDegreeTable[currentVertex] > 0)) throw new AssertionError(); //por si las moscas
                   count += aDegreeTable[currentVertex];
-              } catch (MathException me) {
-                  throw new RuntimeException(me);
-              }
-          }
-          
-          float normalizationFactor = ((float) targetNumberOfEdges )/count;
-          
-          for (int currentVertex = 0; currentVertex < numVertices; currentVertex++){
-              int maybeDegree = Math.round((aDegreeTable[currentVertex]*normalizationFactor));
-              aDegreeTable[currentVertex] =  maybeDegree + (maybeDegree == 0 ? 1:0);
           }
           
           return new SkewedDegreeGraph(aDegreeTable);
       }
       
-      //constructor for testing. //will mutate the degree table
       SkewedDegreeGraph(int[] degreeTable){
           Arrays.sort(degreeTable); //helps doing a lot of other computations
 
@@ -95,6 +101,7 @@ public class SkewedDegreeGraph implements Graph {
       public int getActualMaxDegree(){
           return this.maxDegree;
       }
+      
       /*
        * used for plotting (degree distribution)
        */
@@ -164,19 +171,19 @@ public class SkewedDegreeGraph implements Graph {
             throw new UnsupportedOperationException();            
         }
       };
-            
+          
       //use: to query at benchmark time
       public class QueryWorkloadIterator implements Iterator<Query>{
         
         private final WorkloadParameters parameters;
-        final ZipfDistributionImpl sampler; 
+        final Samplable sampler; 
         final Random internalRandomness = new Random();
         
         int queriesSoFar = 0;
           //this can choose a skew but not necessarily a correlation with degree skew
         public QueryWorkloadIterator(WorkloadParameters params){
-            sampler = new ZipfDistributionImpl(numVertices, params.getQuerySkew());
-            parameters = params;
+        	sampler = params.getSamplable();
+            parameters = params;  
         }
           
         @Override
@@ -188,15 +195,7 @@ public class SkewedDegreeGraph implements Graph {
         @Override
         public Query next()
         {
-            int index;
-            
-            try
-            {
-                index = sampler.sample() - 1;
-            } catch (MathException e)
-            {
-                throw new RuntimeException(e);
-            }
+            int index = sampler.sample();
             
             ++queriesSoFar;
             int maxVertex = degreeTable[index];

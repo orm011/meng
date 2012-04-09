@@ -19,6 +19,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,8 +38,10 @@ import com.twitter.dataservice.shardutils.Node;
 import com.twitter.dataservice.shardutils.Pair;
 import com.twitter.dataservice.shardutils.Vertex;
 import com.twitter.dataservice.parameters.GraphParameters;
+import com.twitter.dataservice.parameters.SamplableBuilder;
 import com.twitter.dataservice.parameters.SystemParameters;
 import com.twitter.dataservice.parameters.WorkloadParameters;
+import com.twitter.dataservice.parameters.SamplableBuilder.DistributionType;
 
 public class Benchmark {
 
@@ -68,17 +71,18 @@ public class Benchmark {
         
         int numNodes = Integer.parseInt(prop.getProperty(SystemParameters.NUM_DATA_NODES));
 
+        SkewedDegreeGraph graph = SkewedDegreeGraph.makeSkewedDegreeGraph(gp);
         Map<Node, IDataNode> nodes = setupNodes(prop, numNodes);    
-        INodeSelectionStrategy sh = setupShardingPolicy(prop, numNodes);
+        INodeSelectionStrategy sh = setupShardingPolicy(prop, numNodes, graph);
         logger.info(sh.getClass().getCanonicalName());
 
         IAPIServer apiServer = new APIServer(nodes, sh);
-        runBenchmark(gp, wp, apiServer);
+        runBenchmark(graph, gp, wp, apiServer);
         System.exit(0);
     }
     
     
-    private static INodeSelectionStrategy setupShardingPolicy(Properties prop, int numNodes) {
+    private static INodeSelectionStrategy setupShardingPolicy(Properties prop, int numNodes, SkewedDegreeGraph graph) {
         String policy = prop.getProperty("system.shardingPolicy");         
         int ROUGHNUMLOOKUP = 9000000; //abt 9 million in lookup table
         
@@ -108,6 +112,29 @@ public class Benchmark {
             int[] specialids = loadExceptionFile(exceptions);
             sh = new SimpleTwoTierSharding(new VertexHashSharding(numNodes), 
                     new VertexHashSharding(numNodes, numShards), specialids);
+        } else if (policy.equals("sharding.syntheticTwoTier")) {
+            Integer threshold = Integer.parseInt(prop.getProperty("syntheticTwoTier.threshold"));
+            Integer numShards = Integer.parseInt(prop.getProperty("syntheticTwoTier.numShards"));
+            logger.info("threshold {}", threshold);
+            logger.info("numShards {}", numShards);
+
+            ArrayList<Integer> specialidsBuilder = new ArrayList<Integer>();
+            Iterator<Pair<Integer, int[]>> it = graph.fanoutIterator();
+            
+            while (it.hasNext()){
+            	Pair<Integer, int[]> curr = it.next();
+            	if (curr.getRight().length > threshold){
+            		specialidsBuilder.add(curr.getLeft());
+            	}
+            }
+
+            int[] specialids = Ints.toArray(specialidsBuilder);
+            logger.info("exception set {}..., size {}", 
+            		Arrays.toString(Arrays.copyOf(specialids, Ints.min(5, specialids.length))), 
+            		specialids.length);
+
+            sh = new SimpleTwoTierSharding(new VertexHashSharding(numNodes, 1), 
+                    new VertexHashSharding(numNodes, numShards), specialids);
         } else {
             throw new RuntimeException(String.format("invalid system.shardingPolicy: %s", policy));
         }
@@ -135,7 +162,7 @@ public class Benchmark {
 	}
 
 
-	private static Properties parsePropertyFile(String benchmarkPropertyFile) {
+	static Properties parsePropertyFile(String benchmarkPropertyFile) {
         Properties prop = new Properties();
         try
         {
@@ -150,37 +177,57 @@ public class Benchmark {
         
         return prop;
 	}
+	
+	public final static String distributionType = "distributionType";
+	public final static String distribution = "distribution";
+	
+	protected static Samplable getSamplable(Properties prop, String namePrefix){
+		String typeproperty = namePrefix + "." + distributionType;
+        String distType = prop.getProperty(typeproperty);
+        DistributionType dt = DistributionType.valueOf(distType);
+        SamplableBuilder sb = new SamplableBuilder();
+        sb.setType(dt);
+        
+        String newprefix = namePrefix + "." + distribution + ".";
+        
+        if (dt.equals(DistributionType.ZIPF)){
+        	float exp = Float.valueOf(prop.getProperty(newprefix + ZipfSamplable.Parameters.exponent.toString()));
+        	int lower = Integer.valueOf(prop.getProperty(newprefix + ZipfSamplable.Parameters.lower.toString()));
+        	int upper = Integer.valueOf(prop.getProperty(newprefix + ZipfSamplable.Parameters.upper.toString()));
+        	int resolution = Integer.valueOf(prop.getProperty(newprefix + ZipfSamplable.Parameters.resolution.toString()));
+        	sb.setSkew(exp); sb.setLowLimit(lower); sb.setHighLimit(upper); sb.setZipfbins(resolution);
+        } else if (dt.equals(DistributionType.CONSTANT)){
+        	int value = Integer.valueOf(prop.getProperty(newprefix + ConstantSamplable.Parameters.value.toString()));
+        	sb.setValue(value);
+        } else if (dt.equals(DistributionType.UNIFORM)){
+        	int lower = Integer.valueOf(prop.getProperty(newprefix + UniformSamplable.Parameters.lower.toString()));
+        	int upper = Integer.valueOf(prop.getProperty(newprefix + UniformSamplable.Parameters.upper.toString()));
+        	sb.setLowLimit(lower); sb.setHighLimit(upper);
+        } else {
+        	throw new NotImplementedException(dt.toString());
+        }
 
+        return sb.build();
+	}
 
-	private static WorkloadParameters getWorkloadParams(Properties prop) {
+	protected static WorkloadParameters getWorkloadParams(Properties prop) {
         int num = Integer.parseInt(prop.getProperty(WorkloadParameters.NUMBER_OF_QUERIES));
         int edge = Integer.parseInt(prop.getProperty(WorkloadParameters.PERCENT_EDGE_QUERIES));
         int fanout = Integer.parseInt(prop.getProperty(WorkloadParameters.PERCENT_FANOUT_QUERIES));
         int intersection = Integer.parseInt(prop.getProperty(WorkloadParameters.PERCENT_INTERSECTION_QUERIES));
-        double sk = Double.parseDouble(prop.getProperty(WorkloadParameters.QUERY_SKEW));
 
-        WorkloadParameters wp = new WorkloadParameters.Builder()
-        .numberOfQueries(num)
-        .queryTypeDistribution(edge, fanout, intersection)
-        .skew(sk)
-        .build();
-        
+        Samplable s = getSamplable(prop, WorkloadParameters.prefix);
+        WorkloadParameters wp = new WorkloadParameters(num, edge, fanout, intersection, s);        
         return wp;
 	}
 
 
-	private static GraphParameters getGraphParams(Properties prop) {
-        int degreeRatioBound = Integer.parseInt(prop.getProperty(GraphParameters.DEGREE_RATIO_BOUND)); 
-        int avgDegree = Integer.parseInt(prop.getProperty(GraphParameters.AVERAGE_DEGREE));
-        double graphsk = Double.parseDouble(prop.getProperty(GraphParameters.SKEW_PARAMETER));
+	protected static GraphParameters getGraphParams(Properties prop) {
         int numVer = Integer.parseInt(prop.getProperty(GraphParameters.NUMBER_VERTICES));
 
-        GraphParameters gp = new GraphParameters.Builder()
-        .degreeBoundAndTargetAvg(degreeRatioBound, avgDegree)
-        .degreeSkew(graphsk)
-        .numberVertices(numVer)
-        .build();
-        
+        Samplable samp = getSamplable(prop, GraphParameters.prefix);
+        GraphParameters gp = new GraphParameters(numVer, samp);
+                
         return gp;
 	}
 	    
@@ -221,9 +268,7 @@ public class Benchmark {
     public static final String NUM_NODES_PER_EXCEPTION = "sharding.numNodesPerException";
     public static final String NUM_EXCEPTIONS = "sharding.numExceptions";
     
-    public static void runBenchmark(GraphParameters graphParams, WorkloadParameters workloadParams, IAPIServer apiServer){
-
-      Graph graph = SkewedDegreeGraph.makeSkewedDegreeGraph(graphParams);
+    public static void runBenchmark(SkewedDegreeGraph graph, GraphParameters graphParams, WorkloadParameters workloadParams, IAPIServer apiServer){
       MetricsCollector omc = new LatencyTrackingAPIServer.InMemoryCollector(graphParams, workloadParams);
       IAPIServer api = new LatencyTrackingAPIServer(apiServer, omc);      
       
@@ -253,10 +298,11 @@ public class Benchmark {
           
           //TODO: be more specific about the exception, at the work node level maybe?
           try {
-              logger.debug(q.toString());
+              logger.debug("{}", q);
               answer = q.execute(api);
-              logger.debug(answer.subList(0, 10).toString());
+              logger.debug("{}", answer.subList(0, Ints.min(10, answer.size())));
           } catch (RuntimeException re){
+        	  re.printStackTrace();
               logger.error("{} for query: {}", re.getMessage(), q);
           }          
       }

@@ -8,6 +8,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.log4j.spi.LoggerFactory;
+import org.slf4j.Logger;
+
 import com.twitter.dataservice.sharding.INodeSelectionStrategy;
 import com.twitter.dataservice.shardutils.Node;
 import com.twitter.dataservice.shardutils.Vertex;
@@ -16,6 +19,7 @@ import com.twitter.dataservice.simulated.UtilMethods;
 
 public class LookupTableSharding implements INodeSelectionStrategy
 {
+	Logger log = org.slf4j.LoggerFactory.getLogger(this.getClass());
 /*
  * 10 million ids * 40 B/id (including linked list and pair pointers from HashMap)
  */
@@ -75,7 +79,7 @@ public class LookupTableSharding implements INodeSelectionStrategy
         Byte node = table.get(v.getId());
 
         if (node == null){
-            System.out.println("WARNING: missing lookup. This should not be being called for vertex " + v);
+            log.warn("WARNING: missing lookup. This should not be being called for vertex {}", v);
             throw new IllegalArgumentException("vertex not in table");
         } else {
             return UtilMethods.toNodeCollection(new byte[]{node});

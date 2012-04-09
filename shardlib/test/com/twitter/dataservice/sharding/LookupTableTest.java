@@ -1,6 +1,5 @@
 package com.twitter.dataservice.sharding;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 

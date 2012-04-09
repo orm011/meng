@@ -7,28 +7,35 @@ import java.io.IOException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Properties;
 
 import org.apache.log4j.PropertyConfigurator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Ticker;
 import com.twitter.dataservice.remotes.IDataNode;
-import com.twitter.dataservice.shardutils.Edge;
-import com.twitter.dataservice.shardutils.Vertex;
 
 public class WorkNodeMain
 {
 	static int DEFAULT_VERTICES = 10000;
 	
-    public static void main(String[] argv){
-        
+    public static void main(String[] argv){    
         if (argv.length == 0){
             System.out.println("usage: NodeName...");
             System.exit(1);    
         }
-                
+
+        String logPropertyFile = "log4j.properties";
+        PropertyConfigurator.configure(logPropertyFile);
+        
+        String benchmarkPropertyFile = "benchmark.properties";
+        Properties prop = Benchmark.parsePropertyFile(benchmarkPropertyFile); 
+        int workRounds = Integer.parseInt(prop.getProperty("system.workRounds"));
+        Logger mylogger = LoggerFactory.getLogger(WorkNodeMain.class);
+        mylogger.debug("workRounds {}", workRounds);
+        
         if (System.getSecurityManager() == null)
             System.setSecurityManager(new SecurityManager());
         
@@ -37,13 +44,15 @@ public class WorkNodeMain
             registry = LocateRegistry.createRegistry(1099);
             
             List<IDataNode> nodes = new LinkedList<IDataNode>();
-         
+            
+            
             for (String namefile: argv){
                 String[] nodeparams = namefile.split("-");
             	String name = nodeparams[0];
             	int size = DEFAULT_VERTICES;
-            	                
-                CompactDataNode dn = new CompactDataNode(size, name);
+
+                CompactDataNode dn = new BriefDataNode(size, name, workRounds); 
+                	//new CompactDataNode(size, name);
                 nodes.add(dn);
                 IDataNode stub =
                     (IDataNode) UnicastRemoteObject.exportObject(dn, 0);

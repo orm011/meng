@@ -17,6 +17,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.twitter.dataservice.parameters.GraphParameters;
+import com.twitter.dataservice.parameters.SamplableBuilder;
+import com.twitter.dataservice.parameters.SamplableBuilder.DistributionType;
 import com.twitter.dataservice.remotes.IDataNode;
 import com.twitter.dataservice.sharding.CycleIterator;
 import com.twitter.dataservice.sharding.ISharding;
@@ -348,12 +350,13 @@ public class TwoTierHashTest
     }
     
     //tests the sharding lib spreads edges evenly (when there are many edges and relatively few shards)
-    @Test public void testEvenOrdinaryPartition(){        
-        GraphParameters gp = new GraphParameters.Builder()
-        .degreeSkew(100) //basically uniform
-        .numberVertices(100000) // a lot, so that each shard gets to have roughly the same, hopefully
-        .degreeBoundAndTargetAvg(1, 1)
-        .build();
+    @Test public void testEvenOrdinaryPartition(){    
+    	
+    	SamplableBuilder sb = new SamplableBuilder();
+    	sb.setType(DistributionType.CONSTANT);
+    	sb.setValue(1);
+    	
+        GraphParameters gp = new GraphParameters(100000, sb.build());
         
         int numExceptions = 0;
         int numOrdinaryShards = 10; //small so that split is even
@@ -374,11 +377,11 @@ public class TwoTierHashTest
     //tests that stuff is spread out evenly within an exceptions' shards
     @Test public void testEvenExceptionPartition(){
           
-          GraphParameters gp = new GraphParameters.Builder()
-          .degreeSkew(100) //basically uniform
-          .numberVertices(5)  //not really many vertices needed
-          .degreeBoundAndTargetAvg(1, 100000) // a lot, so that each exception shard gets to have roughly the same
-          .build();
+     	SamplableBuilder sb = new SamplableBuilder();
+    	sb.setType(DistributionType.CONSTANT);
+    	sb.setValue(100000);
+    	
+        GraphParameters gp = new GraphParameters(5, sb.build());
                     
           int numExceptions = 5; // a few exceptions
           int numOrdinaryShards = 1; // compulsory
@@ -395,7 +398,6 @@ public class TwoTierHashTest
           assertBalancedByShardAndByStorageNode(gp, sharding, numExceptions*numShardsPerException, numNodes);
       }
     
-    //TODO: use a parameter class ShardParameters.
     private void assertBalancedByShardAndByStorageNode(GraphParameters gp, ISharding sharding, int numShards, int numNodes){
         Graph gr = SkewedDegreeGraph.makeSkewedDegreeGraph(gp);
         Iterator<Edge> it = gr.graphIterator();
@@ -410,8 +412,8 @@ public class TwoTierHashTest
         
         //these can fail for some parameter combos (eg if they are small), but should 
         //always succeed given large enough numbers of edges
-        assertBalanced(gp.getNumberEdges(), numShards, 0.1, counterByShard);
-        assertBalanced(gp.getNumberEdges(), numNodes, 0.1, counterByNode);                
+        assertBalanced(gr.getActualDegree(), numShards, 0.1, counterByShard);
+        assertBalanced(gr.getActualDegree(), numNodes, 0.1, counterByNode);                
     }
     
     //TODO: use general Counter interface
@@ -430,7 +432,7 @@ public class TwoTierHashTest
         Assert.assertTrue(max >= min);
         
         double spread = ((double)(max - min))/min;
-        Assert.assertTrue(spread <= maxSpreadTolerated);
+        Assert.assertTrue(String.format("min: %d, max: %d, bins: %d, actual: %f, max: %f", min, max, numBins, spread, maxSpreadTolerated), spread <= maxSpreadTolerated);
         Assert.assertEquals(numParticles, tally.getTotal());
         
     }
