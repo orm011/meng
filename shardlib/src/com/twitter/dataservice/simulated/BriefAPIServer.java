@@ -1,6 +1,4 @@
 package com.twitter.dataservice.simulated;
-
-import com.google.common.collect.Iterators;
 import com.google.common.primitives.Ints;
 import com.twitter.dataservice.remotes.IDataNode;
 import com.twitter.dataservice.sharding.INodeSelectionStrategy;
@@ -10,8 +8,7 @@ import com.twitter.dataservice.shardingpolicy.TwoTierHashSharding;
 import com.twitter.dataservice.shardutils.Edge;
 import com.twitter.dataservice.shardutils.Node;
 import com.twitter.dataservice.shardutils.Vertex;
-
-
+import java.net.ConnectException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -19,7 +16,6 @@ import java.rmi.registry.Registry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -37,14 +33,11 @@ import org.slf4j.LoggerFactory;
 import org.apache.commons.lang.NotImplementedException;
 
 /*
- * # Set Cursor = -1 when requesting the first Page. Cursor = 0 indicates the end of the result set.
-struct Page {
-  1: i32 count
-  2: i64 cursor
-}
+ * Idea is to do less sequential work here
+ * NOTE: not yet tested, may want to share some code with the other version.
  */
 
-public class APIServer implements IAPIServer
+public class BriefAPIServer implements IAPIServer
 {
     
     private static Logger log = LoggerFactory.getLogger(APIServer.class);
@@ -105,7 +98,7 @@ public class APIServer implements IAPIServer
         return nodes;
     }
             
-    public APIServer(Map<Node, IDataNode> nodes, INodeSelectionStrategy shardinglib){
+    public BriefAPIServer(Map<Node, IDataNode> nodes, INodeSelectionStrategy shardinglib){
         this.nodes = nodes;
         this.shardinglib = shardinglib;
         executor = Executors.newFixedThreadPool(nodes.size());
@@ -166,6 +159,7 @@ public class APIServer implements IAPIServer
         @Override
         public int[] call() throws Exception
         {   
+        	//TODO: add a catcher for ConnectException
             return rn.getFanout(v, pageSize, offset);
         }
         
@@ -176,9 +170,9 @@ public class APIServer implements IAPIServer
     };
 
     public Iterator<Integer> sortedScatterGather(List<Callable<int[]>> tasks, ExecutorService es){
-
+    	
         List<Future<int[]>> futures = new LinkedList<Future<int[]>>();
-        List<Iterator<Integer>> results = new LinkedList<Iterator<Integer>>();
+        List<int[]> results = new LinkedList<int[]>();
         
         //scatter (may want to control better the executor service ie. a dedicated queue for each node)
         for (Callable<int[]> task : tasks){
@@ -188,9 +182,9 @@ public class APIServer implements IAPIServer
         //gather
         int i = 0;
         for (Future<int[]> ft: futures){
-            Iterator<Integer> curr = Iterators.emptyIterator();
+            int[] curr = new int[]{};
             try {
-                curr = Ints.asList(ft.get()).iterator();
+                curr = ft.get();
                 log.debug("Success at task: {}", tasks.get(i));
             } catch (InterruptedException e)
             {
@@ -198,14 +192,26 @@ public class APIServer implements IAPIServer
             } catch (ExecutionException e)
             {
                 log.warn("ExecutionException: {}. At task {} for node at positon {}", new Object[]{e, tasks.get(i), i});                //throw new RuntimeException(e);
+                if (e.getCause() instanceof ConnectException){
+                	throw new RuntimeException(e);            		
+                }
             }
             
             results.add(curr);
             i++;
         }
-
-        Iterator<Integer> merged = Iterators.mergeSorted(results, Collections.reverseOrder(Collections.reverseOrder()));
-        return merged;
+        
+        ArrayList<Integer> answer = new ArrayList<Integer>(results.size());
+        
+        
+        for (int[] res : results){
+        	log.debug("{}", res.length);
+        	if (res.length > 0){
+        		answer.add(res[0]);
+        	}
+        }
+        
+        return answer.iterator();
     }
     /* 
      * currently we implement the pageSize and offset part of this by being pessimistic (since its hashed) and sticking to 
@@ -222,14 +228,13 @@ public class APIServer implements IAPIServer
       for (Node n: destinations){
           fanoutTasks.add(new FanoutTask(nodes.get(n), n, v, pageSize, offset));
       }
-      
+
       Iterator<Integer> merged = sortedScatterGather(fanoutTasks, executor);
       
       List<Vertex> answer = new ArrayList<Vertex>(DEFAULT_PREALLOC_SIZE);
       while (merged.hasNext() && answer.size() < pageSize){
           answer.add(new Vertex(merged.next()));
       }
-      
       return answer;
     }
 
@@ -238,10 +243,6 @@ public class APIServer implements IAPIServer
         throw new NotImplementedException();
     }
     
-    //TODO: we need to compute destination edges on a 'per edge' basis.
-    //we can still do that and batch send after.
-    //can be parallelized
-    //THIS IS INTENTIONALY BROKEN EXCEPT FOR VERY SPECIAL CASES
     /*
      * NOTE: assumes the fanout array is ordered.
      */
@@ -255,7 +256,7 @@ public class APIServer implements IAPIServer
             partitioned.put(n, new ArrayList<Integer>(fanouts.length/nodes.size()));        
         }
         
-        //split fanout into the four lists
+        //pre-split fanout into all lists
         //NOTE: assumes stuff is already in order, so that the split is also in order.
         for (int destid : fanouts){
             Node n = shardinglib.getNode(new Vertex(vertexid), new Vertex(destid));
