@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [[ $1 =~ node* ]]
+if [[ $1 =~ *node* ]]
 then
     node=$1
     shift

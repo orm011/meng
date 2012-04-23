@@ -1,7 +1,57 @@
 #!/bin/bash
 
-CP="./bin/:./lib/commons-math-2.2.jar:./lib/commons-lang-2.6.jar:./lib/junit-4.10.jar:./lib/log4j-1.2.16.jar:./lib/slf4j-api-1.6.4.jar:./lib/slf4j-log4j12-1.6.4.jar:./lib/guava-11.0.1.jar"
+if [[ $# == 0 ]]
+then 
+    echo 'usage: <client>'
+    exit 1
+fi
+
+CLIENT="$1.csail.mit.edu"
+shift
+
+echo $CLIENT
+#CLIENT=farm10.csail.mit.edu
+
+make deploy-conf
+
+if [[ $1 != '--getlog' ]]
+then
+CP="./bin/:./lib/commons-math-2.2.jar:./lib/commons-lang-2.6.jar:./lib/junit-4.10.jar:./lib/log4j-1.2.16.jar:./lib/slf4j-api-1.6.4.jar:./lib/slf4j-log4j12-1.6.4.jar:./lib/guava-11.0.1.jar:./lib/fastutil-6.4.3.jar"
 
 FLAGS='-Djava.security.policy=server.policy -Djava.rmi.server.codebase=file:./bin/'
 
-java -cp $CP $FLAGS com.twitter.dataservice.simulated.Benchmark $1 $2
+if [[ $1 == '--local' ]]
+then
+shift
+java -cp $CP $FLAGS com.twitter.dataservice.simulated.Benchmark $1 $2 
+else
+echo $1 $2
+ssh $CLIENT "cd thesis &&  set -o pipefail && java -cp $CP $FLAGS com.twitter.dataservice.simulated.Benchmark $1 $2 | tee last.log"
+if (( $? > 0 ))
+then 
+    echo 'benchmark failed'
+    exit 1
+fi
+fi
+fi
+
+file=$(ssh $CLIENT 'cd thesis; tail -n 1 last.log')
+localcopy=$(basename $file)
+scp $CLIENT:~/thesis/logs/$file logs
+echo "logs/$localcopy" > lastlog.tmp
+
+echo 'config:'
+grep 'Benchmark' $(cat lastlog.tmp)
+echo 'nodestats:'
+grep 'NodeStats' $(cat lastlog.tmp)
+echo 'exceptions:'
+grep 'Exception' $(cat lastlog.tmp)
+echo 'head:'
+grep 'MetricsCollector' $(cat lastlog.tmp) | head -n 5
+echo 'tail:'
+grep 'MetricsCollector' $(cat lastlog.tmp) | tail -n 5
+
+KEYWORD=$3
+LATLIM=$4
+OTHERLIM=$5
+plot.sh --series $(cat lastlog.tmp) $KEYWORD $LATLIM $OTHERLIM
