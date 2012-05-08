@@ -1,0 +1,84 @@
+% -*- Mode:TeX -*-
+
+%% IMPORTANT: The official thesis specifications are available at:
+%%            http://libraries.mit.edu/archives/thesis-specs/
+%%
+%%            Please verify your thesis' formatting and copyright
+%%            assignment before submission.  If you notice any
+%%            discrepancies between these templates and the 
+%%            MIT Libraries' specs, please let us know
+%%            by e-mailing thesis@mit.edu
+
+%% The documentclass options along with the pagestyle can be used to generate
+%% a technical report, a draft copy, or a regular thesis.  You may need to
+%% re-specify the pagestyle after you \include  cover.tex.  For more
+%% information, see the first few lines of mitthesis.cls. 
+
+%\documentclass[12pt,vi,twoside]{mitthesis}
+%%
+%%  If you want your thesis copyright to you instead of MIT, use the
+%%  ``vi'' option, as above.
+%%
+%\documentclass[12pt,twoside,leftblank]{mitthesis}
+%%
+%% If you want blank pages before new chapters to be labelled ``This
+%% Page Intentionally Left Blank'', use the ``leftblank'' option, as
+%% above. 
+
+%other options,  vi, draft, twosides
+%\documentclass[12pt,draft]{mitthesis}
+
+\newcommand{\currentpagestyle}{plain}
+
+\documentclass[12pt,vi]{mitthesis}
+\usepackage{lgrind}
+\pagestyle{\currentpagestyle} %option: plain, drafthead
+
+\usepackage{epsfig}
+\usepackage{subfigure}
+\usepackage{hyperref}
+\usepackage{amsthm}
+
+\newcommand{\gridscale}{3.5in}
+\newcommand{\code}{\ttfamily}
+
+
+%% possible things that have to be done:
+%% polish the chapters including twitter information. send it over.
+%% figures: improve labeling size, coloring (eg show percentiles with color)
+%% add experiment results about varying skew. 
+%% do experiment measuring maximum throughput for intersection. perhaps also do for fanout
+%% add part on 
+
+%% This bit allows you to either specify only the files which you wish to
+%% process, or `all' to process all files which you \include.
+%% Krishna Sethuraman (1990).
+
+%% \typein [\files]{Enter file names to process, (chap1,chap2 ...), or `all' to
+%% process all files:}
+%% \def\all{all}
+%% \ifx\files\all \typeout{Including all files.} \else \typeout{Including only \files.} \includeonly{\files} \fi
+
+\begin{document}
+
+\include{cover}
+\pagestyle{\currentpagestyle}
+\include{contents}
+\include{background}
+\include{twitterbackground}
+\include{optimizations}
+
+
+\section{Loose ends}
+%measuring throughput behavior. Stuff like mixing both strategies, making the algorithms online. Talk about the way to implement this system so that it reacts to new stars well. 
+
+
+\section{Conclusion}
+
+
+%% \appendix
+%% \include{appa}
+%% \include{appb}
+\include{biblio}
+\end{document}
+
